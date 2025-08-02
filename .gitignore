@@ -3,3 +3,4 @@ __pycache__/
 trash/
 
 forward_problems/poisson_MLP/trained_models/
+forward_problems/laplace_MLP/trained_models/
