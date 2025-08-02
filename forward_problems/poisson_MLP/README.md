@@ -1,4 +1,4 @@
-# Poisson Equation with Physics-Informed Neural Network
+# Poisson Equation
 
 This experiment solves the 2D Poisson equation on the unit square \[0,1\]×\[0,1\] using a Physics-Informed Neural Network (PINN).
 
