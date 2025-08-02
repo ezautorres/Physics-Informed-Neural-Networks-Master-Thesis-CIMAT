@@ -92,7 +92,7 @@ def plot_loss(
     ax.grid(True)
 
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.1, dpi = 500, format = 'pdf', transparent = True)
+        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -180,7 +180,7 @@ def plot_solution_square(
         ax.legend()
 
     if filename:
-        plt.savefig(filename, pad_inches = 0.1, dpi = 500, format = 'pdf', transparent = True)
+        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.45, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -260,7 +260,7 @@ def plot_solution_circle(
     ax.set_zlabel(zlabel, fontsize = 12)  
 
     if filename:
-        fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.0, dpi = 500, transparent = True, format = 'pdf')
+        fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.45, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -356,7 +356,7 @@ def plot_comparison_contour_square(
     axes[2].set_aspect('equal')
 
     # Set common labels for all subplots.
-    fig.supxlabel(r'$x$', fontsize = 16, y = 0.11)
+    fig.supxlabel(r'$x$', fontsize = 16, y = 0.05)
     fig.supylabel(r'$y$', fontsize = 16, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 16, x = 0.08)
 
     # Colorbar for solution plots (left two).
@@ -369,7 +369,7 @@ def plot_comparison_contour_square(
 
     # Save or display.
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', dpi = 500, transparent = True, format = 'pdf')
+        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -468,7 +468,7 @@ def plot_comparison_contour_circle(
     axes[2].set_aspect('equal')
 
     # Set common labels for all subplots.
-    fig.supxlabel(r'$x$', fontsize = 16, y = 0.11)
+    fig.supxlabel(r'$x$', fontsize = 16, y = 0.05)
     fig.supylabel(r'$y$', fontsize = 16, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 16, x = 0.08)
 
     # Colorbar for solution plots (left two).
@@ -479,6 +479,6 @@ def plot_comparison_contour_circle(
     fig.colorbar(cs3, cax = cbar_ax2).set_label("Absolute Error", fontsize = 13)
 
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', dpi = 500, transparent = True, format = 'pdf')
+        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()
