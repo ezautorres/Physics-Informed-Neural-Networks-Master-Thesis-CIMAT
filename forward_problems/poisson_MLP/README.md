@@ -26,15 +26,11 @@ The analytical solution is:
 - Collocation points: 500 interior, 8000 on the boundary.
 - Loss: PDE residual + boundary condition loss.
 
----
-
 ## Training Losses
 
 <div align="center">
   <img src="loss_plot.png" alt="Training Loss" width="500"/>
 </div>
-
----
 
 ## Solution Predicted by the PINN
 
@@ -42,12 +38,10 @@ The analytical solution is:
   <img src="solution_plot.png" alt="PINN Solution" width="500"/>
 </div>
 
----
-
 ## Comparison with Analytical Solution
 
 <div align="center">
-  <img src="comparison_plot.png" alt="Comparison with Analytical Solution" width="500"/>
+  <img src="comparison_plot.png" alt="Comparison with Analytical Solution" width="1000"/>
 </div>
 
 ---
