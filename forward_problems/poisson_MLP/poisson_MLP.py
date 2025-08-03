@@ -40,19 +40,21 @@ References
     Computational Physics, 378*, 686-707.
 - PyTorch documentation: https://pytorch.org/docs/stable/nn.html
 """
-import numpy as np                                                                 # Numpy library.
-import torch                                                                       # Import PyTorch
-from typing import Callable                                                        # Type hinting.
-import sys, os                                                                     # Import sys and os modules.
-import random                                                                      # Random library.
-np.set_printoptions(precision = 17, suppress = False)                              # Set print options for numpy.
-np.random.seed(0)                                                                  # Seed for reproducibility.
-random.seed(0)                                                                     # Seed for reproducibility.
-torch.manual_seed(0)                                                               # Seed for reproducibility.
-torch.backends.cudnn.benchmark = False                                             # Reproducibility for CUDA.
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")              # Set device to GPU if available, else CPU.
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) # Add the parent directory to the path.
-from pinn_base import PinnBase                                                     # Import the base class for PINNs.
+import numpy as np                                                                   # Numpy library.
+import torch                                                                         # Import PyTorch
+from typing import Callable                                                          # Type hinting.
+import sys, os                                                                       # Import sys and os modules.
+import random                                                                        # Random library.
+np.set_printoptions(precision = 17, suppress = False)                                # Set print options for numpy.
+np.random.seed(0)                                                                    # Seed for reproducibility.
+random.seed(0)                                                                       # Seed for reproducibility.
+torch.manual_seed(0)                                                                 # Seed for reproducibility.
+torch.backends.cudnn.benchmark = False                                               # Reproducibility for CUDA.
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")                # Set device to GPU if available, else CPU.
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))   # Add the parent directory to the path.
+from pinn_base import PinnBase                                                       # Import the base class for PINNs.
+from plotting import plot_loss, plot_solution_square, plot_comparison_contour_square # Plotting functions.
+from utils import get_model_info                                                     # Utility function to get model information.
 
 class PoissonPinn(PinnBase):
     def __init__(self, **params):
@@ -136,19 +138,19 @@ class PoissonPinn(PinnBase):
 
         return lb_pde * loss_pde + lb_bc * loss_bc
 
-# ==============================================================================================================
+# =======================================================================================================
 # Main function.
-# ==============================================================================================================
+# =======================================================================================================
 if __name__ == "__main__":
 
-    from architectures import MLP                                                        # Import the MLP architecture for the PINN.
-    from sampling import sample_square_uniform                                           # Sampling function for uniform sampling in a square domain.
-    from plotting import plot_loss, plot_solution_square, plot_comparison_contour_square # Plotting functions.
-    from utils import get_model_info                                                     # Utility function to get model information.
-  
-    # Define the model class and its parameters.
+    from architectures import MLP              # Import the MLP architecture for the PINN.
+    from sampling import sample_square_uniform # Sampling function for uniform sampling in a square domain.
+    
+    # ---------------------------------------------------------------------------------------------------
+    # Domain and model parameters.
+    # ---------------------------------------------------------------------------------------------------
     domain_kwargs = {
-        # Domain parameters for the Poisson equation.
+        # Domain parameters.
         'dim1_min'      : 0.,
         'dim1_max'      : 1.,
         'dim2_min'      : 0.,
@@ -167,10 +169,14 @@ if __name__ == "__main__":
         'data_x'        : None,
         'data_u'        : None, 
     }
+
+    # ---------------------------------------------------------------------------------------------------
+    # Architecture and optimizer parameters.
+    # ---------------------------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize'  : 2,
-        'hidden_lys' : [100, 100, 100],
-        'outputSize' : 1
+        'inputSize'  : 2,               # Because we do not have parameters.
+        'hidden_lys' : [100, 100, 100], # Hidden layers of the MLP.
+        'outputSize' : 1                # Output size of the MLP (1 for the Poisson equation).
     }
     
     optimizer_class = torch.optim.LBFGS
@@ -183,42 +189,44 @@ if __name__ == "__main__":
         'line_search_fn'   : "strong_wolfe" # Line search function for the optimizer.
     }
 
-    directory = os.path.dirname(__file__)
-    directory_checkpoint = os.path.join(directory, "trained_models/")
     checkpoint_filename = 'poisson_MLP.pth'
-
     poisson_pinn = PoissonPinn(
         model_class         = MLP,                   # Model class for the PINN.
         model_kwargs        = model_kwargs,          # Model parameters for the PINN.
         domain_kwargs       = domain_kwargs,         # Domain parameters.
         optimizer_class     = optimizer_class,       # Optimizer class (default is LBFGS).
         optimizer_kwargs    = optimizer_kwargs,      # Optimizer parameters.
-        epochs              = 5,                   # Number of epochs for training.
+        epochs              = 150,                   # Number of epochs for training.
         patience            = 10,                    # Patience for early stopping.
         sampling_fn         = sample_square_uniform, # Sampling function.
-        checkpoint_path     = directory_checkpoint,  # Path to save the checkpoints.
         checkpoint_filename = checkpoint_filename,   # Filename for the checkpoints.
     )
 
     # Train the model.
-    #poisson_pinn.train()
+    poisson_pinn.train()
 
     # Load the complete model.
-    poisson_pinn.load_model(load_best = False)      # Load the complete model.
-    get_model_info(directory_checkpoint + checkpoint_filename) # Print model information.
+    poisson_pinn.load_model(load_best = False) # Load the complete model.
+    get_model_info(checkpoint_filename)        # Print model information.
     
     # Plot the loss and the solution.
-    plot_loss(model_instance = poisson_pinn, filename = os.path.join(directory, "loss_plot.png")) # Plot the training and validation loss.
+    plot_loss(
+        model_instance = poisson_pinn,
+        filename       = "loss_plot.png"
+    )
 
     # Plot the solution with the best model.
-    poisson_pinn.load_model(load_best = True)                                      # Load the best model.
-    plot_solution_square(model = poisson_pinn.pinn, domain_kwargs = domain_kwargs,
-                         filename = os.path.join(directory, "solution_plot.png"))  # Plot the solution.
+    poisson_pinn.load_model(load_best = True) # Load the best model.
+    plot_solution_square(
+        model         = poisson_pinn.pinn,
+        domain_kwargs = domain_kwargs,
+        filename      = "solution_plot.png"
+    )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(
         model               = poisson_pinn.pinn,
         analytical_solution = poisson_pinn.analytical_solution,
         domain_kwargs       = domain_kwargs,
-        filename            = os.path.join(directory, "comparison_plot.png")
+        filename            = "comparison_plot.png"
     )

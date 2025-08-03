@@ -34,6 +34,7 @@ References
     Journal of Computational Physics, 378, 686-707.
 """
 # Necessary libraries.
+import os, sys                        # OS and sys modules for file path operations.
 import torch                          # PyTorch library for tensor operations.
 import matplotlib.pyplot as plt       # Matplotlib for plotting.
 from typing import Callable, Optional # Type hinting for callable functions and optional parameters.
@@ -92,7 +93,8 @@ def plot_loss(
     ax.grid(True)
 
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
+        plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -180,7 +182,8 @@ def plot_solution_square(
         ax.legend()
 
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.45, dpi = 500)
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
+        plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.45, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -260,7 +263,8 @@ def plot_solution_circle(
     ax.set_zlabel(zlabel, fontsize = 12)  
 
     if filename:
-        fig.savefig(filename, bbox_inches = 'tight', pad_inches = 0.45, dpi = 500)
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
+        fig.savefig(path, bbox_inches = 'tight', pad_inches = 0.45, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -369,7 +373,8 @@ def plot_comparison_contour_square(
 
     # Save or display.
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
+        plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()
 
@@ -479,6 +484,7 @@ def plot_comparison_contour_circle(
     fig.colorbar(cs3, cax = cbar_ax2).set_label("Absolute Error", fontsize = 13)
 
     if filename:
-        plt.savefig(filename, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
+        plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()

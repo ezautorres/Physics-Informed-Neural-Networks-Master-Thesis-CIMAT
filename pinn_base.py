@@ -42,7 +42,7 @@ import numpy as np                                    # NumPy for numerical oper
 import random                                         # Random module for reproducibility.         
 from abc import ABC, abstractmethod                   # Abstract Base Class for defining abstract methods.
 from typing import Callable                           # Type hinting for callable functions.
-import os                                             # OS module for file path operations.
+import os, sys                                        # OS module for file path operations.
 from trainer import train_pinn                        # Import the training function for PINNs.
 from utils import load_model, save_checkpoint         # Utility functions for loading and saving model checkpoints.
 np.set_printoptions(precision = 17, suppress = False) # Set numpy print options for better precision and suppress scientific notation.
@@ -56,7 +56,7 @@ class PinnBase(ABC):
     def __init__(
             self, epochs: int, patience: int, model_class: type, model_kwargs: dict,
             sampling_fn: Callable, domain_kwargs: dict, optimizer_class: type, optimizer_kwargs: dict,
-            checkpoint_path: str = "trained_model", checkpoint_filename: str = "checkpoint.pth"
+            checkpoint_filename: str = "checkpoint.pth"
         ):
         """
         Initializes the base class for Physics-Informed Neural Networks (PINNs) in 2D or 1D+time domains.
@@ -99,9 +99,9 @@ class PinnBase(ABC):
         self.domain_kwargs = domain_kwargs               # Domain parameters for the sampling function.
 
         # Checkpoint config.
-        self.checkpoint_path     = checkpoint_path                                  # Path to save the checkpoints.
-        self.checkpoint_filename = checkpoint_filename                              # Filename for the checkpoints. 
-        self.best_model_filename = checkpoint_filename.replace('.pth', '_best.pth') # Filename for the best model.
+        self.checkpoint_path     = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "trained_models") # Path to save the checkpoints.
+        self.checkpoint_filename = checkpoint_filename                                                           # Filename for the checkpoints. 
+        self.best_model_filename = checkpoint_filename.replace('.pth', '_best.pth')                              # Filename for the best model.
 
         # Optimizer config.
         self.optimizer_class = optimizer_class if optimizer_class is not None else torch.optim.LBFGS

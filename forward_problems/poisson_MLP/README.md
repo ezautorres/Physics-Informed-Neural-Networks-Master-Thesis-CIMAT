@@ -6,15 +6,15 @@ This experiment solves the 2D Poisson equation on the unit square \[0,1\]×\[0,1
 
 The following PDE is solved:
 
-              Δu(x,y) = -2π²sin(πx)sin(πy),
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Δu(x,y) = –2π² · sin(πx) · sin(πy),
 
 with homogeneous Dirichlet boundary conditions:
 
-              u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
 
 The analytical solution is:
 
-              u(x,y) = sin(πx)sin(πy).
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,y) = sin(πx) · sin(πy).
         
 ---
 

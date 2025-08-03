@@ -41,7 +41,7 @@ References
 # Necessary libraries.
 import numpy as np # NumPy for numerical operations.
 import torch       # PyTorch library for tensor operations.
-import os          # OS module for file operations.
+import os, sys     # OS module for file operations.
 import shutil      # Shutil module for file operations.
 import datetime    # Datetime module for timestamping.
 import random      # Random module for reproducibility.
@@ -65,6 +65,7 @@ def get_model_info(filename: str, device: str = 'cpu') -> None:
         Outputs formatted information to the console. Returns the raw checkpoint if parameters are missing.
     """
     # Load the checkpoint file.
+    filename = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "trained_models", filename)
     checkpoint = torch.load(filename, map_location = torch.device(device), weights_only = False)
     params = checkpoint.get('params', None)
 
@@ -191,7 +192,6 @@ def save_checkpoint(pinn_instance: object, state: dict, is_best: bool) -> None:
             "python"          : random.randint(0, 100000),
         },
         "datetime"            : datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "checkpoint_path"     : pinn_instance.checkpoint_path,
         "checkpoint_filename" : pinn_instance.checkpoint_filename,
         "model_repr"          : str(pinn_instance.pinn)
     }
