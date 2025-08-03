@@ -89,6 +89,7 @@ def plot_loss(
     ax.set_xlabel('Epochs', fontsize = 18)
     ax.set_ylabel('Loss', fontsize = 18)
     ax.set_yscale('log')
+    ax.tick_params(axis = 'both', labelsize = 14)
     ax.legend(fontsize = 14)
     ax.grid(True)
 
@@ -348,16 +349,19 @@ def plot_comparison_contour_square(
     cs1 = axes[0].contourf(grid_1, grid_2, Z_pinn, levels = levels, vmin = vmin, vmax = vmax)
     axes[0].set_title('Neural Network Estimation', fontsize = 16, fontweight = 'bold')
     axes[0].set_aspect('equal')
+    axes[0].tick_params(axis = 'both', labelsize = 14)
 
     # Analytical solution.
     cs2 = axes[1].contourf(grid_1, grid_2, Z_true, levels = levels, vmin = vmin, vmax = vmax)
     axes[1].set_title('Analytical Solution', fontsize = 16, fontweight = 'bold')
     axes[1].set_aspect('equal')
+    axes[1].tick_params(axis = 'both', labelsize = 14)
 
     # Absolute error.
     cs3 = axes[2].contourf(grid_1, grid_2, Z_error, levels = levels)
     axes[2].set_title('Absolute Error', fontsize = 16, fontweight = 'bold')
     axes[2].set_aspect('equal')
+    axes[2].tick_params(axis = 'both', labelsize = 14)
 
     # Set common labels for all subplots.
     fig.supxlabel(r'$x$', fontsize = 16, y = 0.05)
@@ -461,16 +465,19 @@ def plot_comparison_contour_circle(
     cs1 = axes[0].contourf(grid_1, grid_2, Z_pinn, levels = levels, vmin = vmin, vmax = vmax)
     axes[0].set_title('Neural Network Estimation', fontsize = 16, fontweight = 'bold')
     axes[0].set_aspect('equal')
+    axes[0].tick_params(axis = 'both', labelsize = 14)
 
     # Analytical solution.
     cs2 = axes[1].contourf(grid_1, grid_2, Z_true, levels = levels, vmin = vmin, vmax = vmax)
     axes[1].set_title('Analytical Solution', fontsize = 16, fontweight = 'bold')
     axes[1].set_aspect('equal')
+    axes[1].tick_params(axis = 'both', labelsize = 14)
 
     # Absolute error.
     cs3 = axes[2].contourf(grid_1, grid_2, Z_error, levels = levels)
     axes[2].set_title('Absolute Error', fontsize = 16, fontweight = 'bold')
     axes[2].set_aspect('equal')
+    axes[2].tick_params(axis = 'both', labelsize = 14)
 
     # Set common labels for all subplots.
     fig.supxlabel(r'$x$', fontsize = 16, y = 0.05)

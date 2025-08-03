@@ -203,7 +203,7 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    poisson_pinn.train()
+    #poisson_pinn.train()
 
     # Load the complete model.
     poisson_pinn.load_model(load_best = False) # Load the complete model.
