@@ -80,17 +80,17 @@ def plot_loss(
         created_figure = True
 
     epochs = list(range(1, len(loss_history) + 1))
-    ax.plot(epochs, loss_history, label = 'Training loss', color = '#00629B')
-    ax.plot(epochs, val_loss_history, label = 'Validation loss', color = '#E87722')
+    ax.plot(epochs, loss_history, label = 'Training loss', color = '#00629B', linewidth = 3)
+    ax.plot(epochs, val_loss_history, label = 'Validation loss', color = '#E87722', linewidth = 3)
 
     if best_epoch and complete_training:
-        ax.axvline(best_epoch, linestyle = "--", color = '#75787B', alpha = 0.7, label = f"Best Epoch: {best_epoch}")
+        ax.axvline(best_epoch, linestyle = "--", color = '#75787B', alpha = 0.7, label = f"Best Epoch: {best_epoch}", linewidth = 3)
 
-    ax.set_xlabel('Epochs', fontsize = 18)
-    ax.set_ylabel('Loss', fontsize = 18)
+    ax.set_xlabel('Epochs', fontsize = 22)
+    ax.set_ylabel('Loss', fontsize = 22)
     ax.set_yscale('log')
-    ax.tick_params(axis = 'both', labelsize = 14)
-    ax.legend(fontsize = 14)
+    ax.tick_params(axis = 'both', labelsize = 20)
+    ax.legend(fontsize = 20)
     ax.grid(True)
 
     if filename:
@@ -160,8 +160,10 @@ def plot_solution_square(
 
     # Plot the surface.
     ax.plot_surface(grid_1.numpy(), grid_2.numpy(), Z.detach().numpy(), cmap = 'winter', edgecolor = 'none')
-    ax.set_xlabel(r'$x$', fontsize = 12)
-    ax.set_ylabel(r'$y$', fontsize = 12) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 12)
+    ax.set_xlabel(r'$x$', fontsize = 15)
+    ax.set_ylabel(r'$y$', fontsize = 15) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 15)
+    ax.tick_params(axis = 'both', labelsize = 12)
+    ax.zaxis.set_tick_params(labelsize = 12)
     if time_dependent:
         if parameters:
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,t;\theta)$'
@@ -172,7 +174,7 @@ def plot_solution_square(
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,y;\theta)$'
         else:
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,y)$'
-    ax.set_zlabel(zlabel, fontsize = 12)       
+    ax.set_zlabel(zlabel, fontsize = 15)
 
     # If observed data is provided in domain_kwargs, plot it as scatter points.
     if domain_kwargs.get("data_x") is not None and domain_kwargs.get("data_u") is not None:
@@ -249,8 +251,10 @@ def plot_solution_circle(
         created_figure = True
 
     ax.plot_surface(grid_1.numpy(), grid_2.numpy(), Z.numpy(), cmap = 'winter', edgecolor = 'none')
-    ax.set_xlabel(r'$x$', fontsize = 12)
-    ax.set_ylabel(r'$y$', fontsize = 12) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 12)
+    ax.set_xlabel(r'$x$', fontsize = 15)
+    ax.set_ylabel(r'$y$', fontsize = 15) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 15)
+    ax.tick_params(axis = 'both', labelsize = 12)
+    ax.zaxis.set_tick_params(labelsize = 12)
     if time_dependent:
         if parameters:
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,t;\theta)$'
@@ -261,7 +265,7 @@ def plot_solution_circle(
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,y;\theta)$'
         else:
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,y)$'
-    ax.set_zlabel(zlabel, fontsize = 12)  
+    ax.set_zlabel(zlabel, fontsize = 15)
 
     if filename:
         path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
@@ -311,8 +315,8 @@ def plot_comparison_contour_square(
     Returns
     -------
     None
-        The function produces a composite figure with three contour plots. If `filename` is provided, the
-        figure is saved. If `ax` is not provided, the plot is displayed interactively.
+        The function produces a composite figure with three contour plots. If filename is provided, the
+        figure is saved. If ax is not provided, the plot is displayed interactively.
     """
     # Create meshgrid over the square domain.
     eje1 = torch.linspace(domain_kwargs["dim1_min"], domain_kwargs["dim1_max"], 400)
@@ -347,33 +351,33 @@ def plot_comparison_contour_square(
 
     # PINN prediction.
     cs1 = axes[0].contourf(grid_1, grid_2, Z_pinn, levels = levels, vmin = vmin, vmax = vmax)
-    axes[0].set_title('Neural Network Estimation', fontsize = 16, fontweight = 'bold')
+    axes[0].set_title('Neural Network Estimation', fontsize = 20, fontweight = 'bold')
     axes[0].set_aspect('equal')
-    axes[0].tick_params(axis = 'both', labelsize = 14)
+    axes[0].tick_params(axis = 'both', labelsize = 18)
 
     # Analytical solution.
     cs2 = axes[1].contourf(grid_1, grid_2, Z_true, levels = levels, vmin = vmin, vmax = vmax)
-    axes[1].set_title('Analytical Solution', fontsize = 16, fontweight = 'bold')
+    axes[1].set_title('Analytical Solution', fontsize = 20, fontweight = 'bold')
     axes[1].set_aspect('equal')
-    axes[1].tick_params(axis = 'both', labelsize = 14)
+    axes[1].tick_params(axis = 'both', labelsize = 18)
 
     # Absolute error.
     cs3 = axes[2].contourf(grid_1, grid_2, Z_error, levels = levels)
-    axes[2].set_title('Absolute Error', fontsize = 16, fontweight = 'bold')
+    axes[2].set_title('Absolute Error', fontsize = 20, fontweight = 'bold')
     axes[2].set_aspect('equal')
-    axes[2].tick_params(axis = 'both', labelsize = 14)
+    axes[2].tick_params(axis = 'both', labelsize = 18)
 
     # Set common labels for all subplots.
-    fig.supxlabel(r'$x$', fontsize = 16, y = 0.05)
-    fig.supylabel(r'$y$', fontsize = 16, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 16, x = 0.08)
+    fig.supxlabel(r'$x$', fontsize = 20, y = 0.03)
+    fig.supylabel(r'$y$', fontsize = 20, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 20, x = 0.08)
 
     # Colorbar for solution plots (left two).
     cbar_ax1 = fig.add_axes([0.92, 0.58, 0.015, 0.30])
-    fig.colorbar(cs2, cax = cbar_ax1).set_label("Solution Scale", fontsize = 13)
+    fig.colorbar(cs2, cax = cbar_ax1).set_label("Solution Scale", fontsize = 15)
 
     # Colorbar for error plot (right).
     cbar_ax2 = fig.add_axes([0.92, 0.15, 0.015, 0.30])
-    fig.colorbar(cs3, cax = cbar_ax2).set_label("Absolute Error", fontsize = 13)
+    fig.colorbar(cs3, cax = cbar_ax2).set_label("Absolute Error", fontsize = 15)
 
     # Save or display.
     if filename:
@@ -463,32 +467,32 @@ def plot_comparison_contour_circle(
 
     # PINN prediction.
     cs1 = axes[0].contourf(grid_1, grid_2, Z_pinn, levels = levels, vmin = vmin, vmax = vmax)
-    axes[0].set_title('Neural Network Estimation', fontsize = 16, fontweight = 'bold')
+    axes[0].set_title('Neural Network Estimation', fontsize = 20, fontweight = 'bold')
     axes[0].set_aspect('equal')
-    axes[0].tick_params(axis = 'both', labelsize = 14)
+    axes[0].tick_params(axis = 'both', labelsize = 18)
 
     # Analytical solution.
     cs2 = axes[1].contourf(grid_1, grid_2, Z_true, levels = levels, vmin = vmin, vmax = vmax)
-    axes[1].set_title('Analytical Solution', fontsize = 16, fontweight = 'bold')
+    axes[1].set_title('Analytical Solution', fontsize = 20, fontweight = 'bold')
     axes[1].set_aspect('equal')
-    axes[1].tick_params(axis = 'both', labelsize = 14)
+    axes[1].tick_params(axis = 'both', labelsize = 18)
 
     # Absolute error.
     cs3 = axes[2].contourf(grid_1, grid_2, Z_error, levels = levels)
-    axes[2].set_title('Absolute Error', fontsize = 16, fontweight = 'bold')
+    axes[2].set_title('Absolute Error', fontsize = 20, fontweight = 'bold')
     axes[2].set_aspect('equal')
-    axes[2].tick_params(axis = 'both', labelsize = 14)
+    axes[2].tick_params(axis = 'both', labelsize = 18)
 
     # Set common labels for all subplots.
-    fig.supxlabel(r'$x$', fontsize = 16, y = 0.05)
-    fig.supylabel(r'$y$', fontsize = 16, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 16, x = 0.08)
+    fig.supxlabel(r'$x$', fontsize = 20, y = 0.05)
+    fig.supylabel(r'$y$', fontsize = 20, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 20, x = 0.08)
 
     # Colorbar for solution plots (left two).
     cbar_ax1 = fig.add_axes([0.92, 0.58, 0.015, 0.30])
-    fig.colorbar(cs2, cax = cbar_ax1).set_label("Solution Scale", fontsize = 13)
+    fig.colorbar(cs2, cax = cbar_ax1).set_label("Solution Scale", fontsize = 15)
 
     cbar_ax2 = fig.add_axes([0.92, 0.15, 0.015, 0.30])
-    fig.colorbar(cs3, cax = cbar_ax2).set_label("Absolute Error", fontsize = 13)
+    fig.colorbar(cs3, cax = cbar_ax2).set_label("Absolute Error", fontsize = 15)
 
     if filename:
         path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
