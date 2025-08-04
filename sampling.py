@@ -181,50 +181,44 @@ def sample_circle_uniform_center_restriction(
         valSize = None, fixed_params: Tuple = None, param_domains: List[Tuple] = None,
         train: bool = True, device: str = 'cpu') -> torch.Tensor:
     """
-    Samples points uniformly over a square domain, including both interior and boundary points, for
-    training or validation in Physics-Informed Neural Networks (PINNs). This function generates points
-    inside a 2D domain and on its four edges using Latin Hypercube Sampling and uniform random sampling.
-    It supports the addition of fixed or randomly sampled parameters for parametric PINNs. If `train` is
-    False, it produces validation points with equal count per region.
+    Samples collocation points for a Physics-Informed Neural Network (PINN) in a circular domain centered at a given point.
+
+    This function generates points for training or validation in PINNs over a circular domain:
+    - **Interior points** are sampled using Latin Hypercube Sampling (LHS) in polar coordinates.
+    - **Boundary points** are uniformly distributed along the circle's perimeter.
+    - **Auxiliary points** are repeated at the center of the circle (e.g., for Neumann or source terms).
+    
+    Optionally, the function can append fixed or randomly sampled parameters to each point, useful for parametric PINNs.
+    For validation (`train=False`), the total number of points `valSize` is divided evenly among the three regions.
 
     Parameters
     ----------
-    dim1_min : float
-        Lower bound of the first input dimension (e.g., x or t).
-    dim1_max : float
-        Upper bound of the first input dimension.
-    dim2_min : float
-        Lower bound of the second input dimension (e.g., y or x).
-    dim2_max : float
-        Upper bound of the second input dimension.
+    center : tuple of float
+        Coordinates of the center of the circle (e.g., (x₀, y₀)).
+    radius : float
+        Radius of the circular domain.
     interiorSize : int
-        Number of points to sample in the interior of the domain.
-    dim1_minSize : int
-        Number of boundary points on the lower edge of the first dimension (dim1 = dim1_min).
-    dim1_maxSize : int
-        Number of boundary points on the upper edge of the first dimension (dim1 = dim1_max).
-    dim2_minSize : int
-        Number of boundary points on the lower edge of the second dimension (dim2 = dim2_min).
-    dim2_maxSize : int
-        Number of boundary points on the upper edge of the second dimension (dim2 = dim2_max).
-    valSize : int
-        Total number of validation points to sample (used only if `train` is False).
+        Number of interior collocation points.
+    boundarySize : int
+        Number of points to sample on the boundary of the circle.
+    auxiliarySize : int
+        Number of auxiliary points at the center of the circle.
+    valSize : int, optional
+        Total number of validation points to sample (used only if `train=False`).
     fixed_params : tuple, optional
-        Fixed parameters to append to each sampled point. Useful for parametric PINNs.
+        Fixed parameter values to append to each sampled point (for parametric PINNs).
     param_domains : list of tuple, optional
-        List of (min, max) tuples specifying uniform sampling ranges for each parameter.
-        Used to append randomly sampled parameters to each point.
+        List of (min, max) tuples defining the sampling range of each parameter to be randomly sampled.
     train : bool, optional
-        If True, samples training points including interior and boundaries. If False, samples validation points.
-        Default is True.
+        If True, generates training points (interior, boundary, and center). If False, generates validation points.
     device : str, optional
-        Device where the resulting tensor will be stored ('cpu' or 'cuda'). Default is 'cpu'.
+        Target device for the returned tensor ('cpu' or 'cuda'). Default is 'cpu'.
 
     Returns
     -------
     torch.Tensor
-        Tensor of shape (N, 2 + n_params) if parameters are used, or (N, 2) otherwise. Contains interior
-        and boundary points. Requires gradients if `train` is True.
+        Tensor of shape (N, 2 + n_params), where N is the total number of sampled points and `n_params` is the number
+        of additional parameters (if any). The tensor requires gradients if `train=True`.
     """
     # Check if the input parameters are valid.
     if radius <= 0:

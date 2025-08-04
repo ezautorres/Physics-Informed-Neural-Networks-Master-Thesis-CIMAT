@@ -430,7 +430,7 @@ def plot_comparison_contour_circle(
     """
     # Extract circle info
     center = domain_kwargs["center"]
-    radius   = domain_kwargs["radius"]
+    radius = domain_kwargs["radius"]
 
     # Meshgrid over bounding square
     eje1 = torch.linspace(center[0] - radius, center[0] + radius, 400)
@@ -462,8 +462,6 @@ def plot_comparison_contour_circle(
     if ax is None:
         fig, axes = plt.subplots(1, 3, figsize = (18,6), constrained_layout = False)
         created_figure = True
-    else:
-        axes = [ax] * 3
 
     # PINN prediction.
     cs1 = axes[0].contourf(grid_1, grid_2, Z_pinn, levels = levels, vmin = vmin, vmax = vmax)
@@ -484,8 +482,8 @@ def plot_comparison_contour_circle(
     axes[2].tick_params(axis = 'both', labelsize = 18)
 
     # Set common labels for all subplots.
-    fig.supxlabel(r'$x$', fontsize = 20, y = 0.05)
-    fig.supylabel(r'$y$', fontsize = 20, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 20, x = 0.08)
+    fig.supxlabel(r'$x$', fontsize = 20, y = 0.03)
+    fig.supylabel(r'$y$', fontsize = 20, x = 0.06) if not time_dependent else fig.supylabel(r'$t$', fontsize = 20, x = 0.06)
 
     # Colorbar for solution plots (left two).
     cbar_ax1 = fig.add_axes([0.92, 0.58, 0.015, 0.30])

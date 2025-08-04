@@ -33,12 +33,6 @@ Run the script directly to:
     - Instantiate and train the PINN for the Poisson problem.
     - Save and load checkpoints.
     - Visualize the loss, solution, and comparison with the analytical solution.
-
-References
-----------
-- Raissi, M., Perdikaris, P., & Karniadakis, G. E. (2019). Physics-informed neural networks. *Journal of 
-    Computational Physics, 378*, 686-707.
-- PyTorch documentation: https://pytorch.org/docs/stable/nn.html
 """
 import numpy as np                                                                   # Numpy library.
 import torch                                                                         # Import PyTorch
