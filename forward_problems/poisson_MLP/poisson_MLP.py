@@ -212,15 +212,14 @@ if __name__ == "__main__":
     # Plot the solution with the best model.
     poisson_pinn.load_model(load_best = True) # Load the best model.
     plot_solution_square(
-        model         = poisson_pinn.pinn,
-        domain_kwargs = domain_kwargs,
-        filename      = "solution_plot.pdf"
+        model_instance = poisson_pinn,
+        domain_kwargs  = domain_kwargs,
+        filename       = "solution_plot.pdf"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(
-        model               = poisson_pinn.pinn,
-        analytical_solution = poisson_pinn.analytical_solution,
-        domain_kwargs       = domain_kwargs,
-        filename            = "comparison_plot.pdf"
+        model_instance = poisson_pinn,
+        domain_kwargs  = domain_kwargs,
+        filename       = "comparison_plot.pdf"
     )

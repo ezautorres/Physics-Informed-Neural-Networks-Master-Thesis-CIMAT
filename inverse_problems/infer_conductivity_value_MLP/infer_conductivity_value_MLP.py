@@ -286,12 +286,12 @@ if __name__ == "__main__":
     )
 
     # Train the model.
-    infer_rho_pinn.train()
+    #infer_rho_pinn.train()
 
     # Load the complete model.
     infer_rho_pinn.load_model(load_best = False) # Load the complete model.
-    get_model_info(checkpoint_filename)        # Print model information.
-    
+    get_model_info(checkpoint_filename)          # Print model information.
+
     # Plot the loss and the solution.
     plot_loss(
         model_instance = infer_rho_pinn,
@@ -301,17 +301,16 @@ if __name__ == "__main__":
     # Plot the solution with the best model.
     infer_rho_pinn.load_model(load_best = True) # Load the best model.
     plot_solution_circle(
-        model         = infer_rho_pinn.pinn,
-        domain_kwargs = domain_kwargs,
-        parameters    = [0.85, 3.2],
-        filename      = "solution_plot.png"
+        model_instance = infer_rho_pinn,
+        domain_kwargs  = domain_kwargs,
+        parameters     = [0.85, 3.2],
+        filename       = "solution_plot.png"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_circle(
-        model               = infer_rho_pinn.pinn,
-        analytical_solution = infer_rho_pinn.analytical_solution,
-        domain_kwargs       = domain_kwargs,
-        parameters          = [0.85, 3.2],
-        filename            = "comparison_plot.png"
+        model_instance = infer_rho_pinn,
+        domain_kwargs  = domain_kwargs,
+        parameters     = [0.85, 3.2],
+        filename       = "comparison_plot.png"
     )

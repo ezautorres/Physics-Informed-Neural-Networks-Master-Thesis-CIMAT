@@ -100,7 +100,7 @@ def plot_loss(
         plt.show()
 
 def plot_solution_square(
-        model: Callable, domain_kwargs: dict, parameters: Optional[list] = None,
+        model_instance: Callable, domain_kwargs: dict, parameters: Optional[list] = None,
         filename: Optional[str] = None, ax: Optional[plt.Axes] = None, time_dependent: bool = False
         ) -> None:
     """
@@ -111,9 +111,8 @@ def plot_solution_square(
 
     Parameters
     ----------
-    model : Callable
-        Trained PINN model that takes a tensor input of shape (2 + n_params,) and returns a scalar
-        prediction.
+    model_instance : Callable
+        
     domain_kwargs : dict
         Dictionary containing the limits of the square domain. Must include:
             dim1_min : float
@@ -150,7 +149,7 @@ def plot_solution_square(
     for i in range(len(Z)):
         for j in range(len(Z)):
             input_tensor = [grid_1[i,j], grid_2[i,j]] + (parameters if parameters else [])
-            Z[i,j] = model(torch.tensor(input_tensor))
+            Z[i,j] = model_instance.pinn(torch.tensor(input_tensor))
 
     created_figure = False
     if ax is None:
@@ -191,7 +190,7 @@ def plot_solution_square(
         plt.show()
 
 def plot_solution_circle(
-        model: Callable, domain_kwargs: dict, parameters: Optional[list] = None,
+        model_instance: Callable, domain_kwargs: dict, parameters: Optional[list] = None,
         filename: Optional[str] = None, ax: Optional[plt.Axes] = None, time_dependent: bool = False
         ) -> None:
     """
@@ -202,9 +201,8 @@ def plot_solution_circle(
 
     Parameters
     ----------
-    model : Callable
-        Trained PINN model that receives a tensor input of shape (2 + n_params,) and returns a scalar
-        output. 
+    model_instance : Callable
+        
     domain_kwargs : dict
         Dictionary defining the circular domain. Must include:
             center : tuple of float
@@ -242,8 +240,8 @@ def plot_solution_circle(
             if r <= radius:
                 z_input = torch.tensor([grid_1[i,j], grid_2[i,j]] + (parameters if parameters else []))
                 with torch.no_grad():
-                    Z[i,j] = model(z_input).cpu()
-    
+                    Z[i,j] = model_instance.pinn(z_input).cpu()
+
     created_figure = False
     if ax is None:
         fig = plt.figure(figsize = (10,6))
@@ -274,8 +272,8 @@ def plot_solution_circle(
         plt.show()
 
 def plot_comparison_contour_square(
-        model: Callable, analytical_solution: Callable, domain_kwargs: dict,
-        parameters: list = None, filename: str = None, levels: int = 20, ax: Optional[plt.Axes] = None,
+        model_instance: Callable, domain_kwargs: dict, parameters: list = None,
+        filename: str = None, levels: int = 20, ax: Optional[plt.Axes] = None,
         time_dependent: bool = False) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical solution, and their absolute
@@ -285,12 +283,8 @@ def plot_comparison_contour_square(
 
     Parameters
     ----------
-    model : Callable
-        Trained PINN model. Must accept a tensor input of shape (2 + n_params,) and return a scalar
-        prediction.
-    analytical_solution : Callable
-        Function representing the exact or reference solution. Must accept a tensor of shape (1,d) and
-        return a scalar.
+    model_instance : Callable
+        
     domain_kwargs : dict
         Dictionary specifying the square domain. Must include:
             dim1_min : float
@@ -333,8 +327,8 @@ def plot_comparison_contour_square(
         for j in range(grid_2.shape[1]):
             z_input = torch.tensor([grid_1[i,j], grid_2[i,j]] + (parameters if parameters is not None else []))
             with torch.no_grad():
-                pred = model(z_input).cpu()
-                true = analytical_solution(z_input.unsqueeze(0)).cpu()
+                pred = model_instance.pinn(z_input).cpu()
+                true = model_instance.analytical_solution(z_input.unsqueeze(0)).cpu()
                 Z_pinn[i,j] = pred
                 Z_true[i,j] = true
                 Z_error[i,j] = torch.abs(pred - true)
@@ -387,8 +381,8 @@ def plot_comparison_contour_square(
         plt.show()
 
 def plot_comparison_contour_circle(
-        model: Callable, analytical_solution: Callable, domain_kwargs: dict,
-        parameters: list = None, filename: str = None, levels: int = 20, ax: Optional[plt.Axes] = None,
+        model_instance: Callable, domain_kwargs: dict, parameters: list = None,
+        filename: str = None, levels: int = 20, ax: Optional[plt.Axes] = None,
         time_dependent: bool = False) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical solution, and their absolute
@@ -398,12 +392,8 @@ def plot_comparison_contour_circle(
 
     Parameters
     ----------
-    model : Callable
-        Trained PINN model. Must accept a tensor input of shape (2 + n_params,) and return a scalar
-        prediction.
-    analytical_solution : Callable
-        Function representing the exact or reference solution. Must accept a tensor of shape (1,d) and
-        return a scalar.
+    model_instance : Callable
+
     domain_kwargs : dict
         Dictionary specifying the circular domain. Must include:
             center : tuple of float
@@ -448,8 +438,8 @@ def plot_comparison_contour_circle(
             if torch.sqrt((x - center[0])**2 + (y - center[1])**2) <= radius:
                 input_tensor = torch.tensor([x,y] + (parameters if parameters else []), dtype = torch.float32)
                 with torch.no_grad():
-                    pred = model(input_tensor).cpu()
-                    true = analytical_solution(input_tensor.unsqueeze(0)).cpu()
+                    pred = model_instance.pinn(input_tensor).cpu()
+                    true = model_instance.analytical_solution(input_tensor.unsqueeze(0)).cpu()
                     Z_pinn[i,j] = pred
                     Z_true[i,j] = true
                     Z_error[i,j] = torch.abs(pred - true)
