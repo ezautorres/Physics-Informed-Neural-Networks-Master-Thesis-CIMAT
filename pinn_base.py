@@ -95,6 +95,7 @@ class PinnBase(ABC):
         self.patience      = patience                    # Number of epochs without improvement before early stopping.
         self.pinn          = model_class(**model_kwargs) # PINN: Neural network model.
         self.model_kwargs  = model_kwargs                # Model parameters.
+        self.model_class   = model_class                 # Class of the neural network model.
         self.sampling_fn   = sampling_fn                 # Function to sample points for training and validation.
         self.domain_kwargs = domain_kwargs               # Domain parameters for the sampling function.
 

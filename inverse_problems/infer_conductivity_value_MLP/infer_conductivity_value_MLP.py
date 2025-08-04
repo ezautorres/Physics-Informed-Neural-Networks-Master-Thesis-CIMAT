@@ -1,6 +1,6 @@
 """
-infer_rho_MLP.py
------------------
+infer_conductivity_value_MLP.py
+-------------------------------
 Instance of a Physics-Informed Neural Network (PINN) for inferring a spatial parameter in the steady-state
 diffusion equation on the unit disk.
 
@@ -28,7 +28,7 @@ The governing PDE is:
 with mixed boundary and auxiliary conditions derived from an analytical solution.
 
 This implementation includes:
-    - A custom subclass `UnitDiskGivenR` derived from a general PINN base class.
+    - A custom subclass `InferringConductivityValue` derived from a general PINN base class.
     - The definition of a discontinuous diffusion coefficient $\lambda(r)$.
     - An analytical solution for benchmarking inverse results.
     - Custom loss functions that enforce PDE, boundary, and auxiliary constraints.
@@ -58,11 +58,11 @@ from pinn_base import PinnBase                                                  
 from plotting import plot_loss, plot_solution_circle, plot_comparison_contour_circle # Plotting functions.
 from utils import get_model_info                                                     # Utility function to get model information.
 
-class UnitDiskGivenR(PinnBase):
+class InferringConductivityValue(PinnBase):
     def __init__(self, **params):
         """
-        Initializes the UnitDiskGivenR instance using the configuration dictionary passed to the base
-        class.
+        Initializes the InferringConductivityValue instance using the configuration dictionary passed to
+        the base class.
 
         Parameters
         ----------
@@ -70,7 +70,7 @@ class UnitDiskGivenR(PinnBase):
             Dictionary of arguments required by the PinnBase class, including model configuration,
             optimizer settings, and domain sampling specifications.
         """
-        super(UnitDiskGivenR, self).__init__(**params) # Initialize the PINN with parameters from the base class.
+        super(InferringConductivityValue, self).__init__(**params) # Initialize the PINN with parameters from the base class.
 
     def lambda_fn(self, X: torch.Tensor) -> torch.Tensor:
         """
@@ -238,8 +238,8 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------------------------------
     domain_kwargs = {
         # Domain parameters.
-        'center'      : [0,0],
-        'radius'      : 1,
+        'center'        : [0,0],
+        'radius'        : 1,
         # Collocation points.
         'interiorSize'  : 1700,
         'boundarySize'  : 2000,
@@ -272,8 +272,8 @@ if __name__ == "__main__":
         'line_search_fn'   : "strong_wolfe" # Line search function for the optimizer.
     }
 
-    checkpoint_filename = 'infer_rho_MLP.pth'
-    infer_rho_pinn = UnitDiskGivenR(
+    checkpoint_filename = 'infer_conductivity_value_MLP.pth'
+    infer_rho_pinn = InferringConductivityValue(
         model_class         = MLP,                                      # Model class for the PINN.
         model_kwargs        = model_kwargs,                             # Model parameters for the PINN.
         domain_kwargs       = domain_kwargs,                            # Domain parameters.

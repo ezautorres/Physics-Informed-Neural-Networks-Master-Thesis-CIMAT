@@ -206,7 +206,7 @@ if __name__ == "__main__":
     # Plot the loss and the solution.
     plot_loss(
         model_instance = poisson_pinn,
-        filename       = "loss_plot.png"
+        filename       = "loss_plot.pdf"
     )
 
     # Plot the solution with the best model.
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     plot_solution_square(
         model         = poisson_pinn.pinn,
         domain_kwargs = domain_kwargs,
-        filename      = "solution_plot.png"
+        filename      = "solution_plot.pdf"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
@@ -222,5 +222,5 @@ if __name__ == "__main__":
         model               = poisson_pinn.pinn,
         analytical_solution = poisson_pinn.analytical_solution,
         domain_kwargs       = domain_kwargs,
-        filename            = "comparison_plot.png"
+        filename            = "comparison_plot.pdf"
     )

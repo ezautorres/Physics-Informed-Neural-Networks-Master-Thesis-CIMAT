@@ -39,12 +39,28 @@ References
 - PyTorch documentation: https://pytorch.org/docs/stable/
 """
 # Necessary libraries.
-import numpy as np # NumPy for numerical operations.
-import torch       # PyTorch library for tensor operations.
-import os, sys     # OS module for file operations.
-import shutil      # Shutil module for file operations.
-import datetime    # Datetime module for timestamping.
-import random      # Random module for reproducibility.
+import numpy as np            # NumPy for numerical operations.
+import torch                  # PyTorch library for tensor operations.
+import os, sys                # OS module for file operations.
+import shutil                 # Shutil module for file operations.
+import datetime               # Datetime module for timestamping.
+import random                 # Random module for reproducibility.
+from architectures import MLP # Import the MLP architecture.
+import torch.optim            # PyTorch optimizers.
+from sampling import sample_circle_uniform_center_restriction
+
+# Map string names to actual classes
+MODEL_REGISTRY = {
+    "MLP" : MLP,
+}
+OPTIMIZER_REGISTRY = {
+    "LBFGS" : torch.optim.LBFGS,
+    "Adam"  : torch.optim.Adam,
+}
+SAMPLING_REGISTRY = {
+    "sample_square_uniform"                    : sample_circle_uniform_center_restriction,
+    "sample_circle_uniform_center_restriction" : sample_circle_uniform_center_restriction,
+}
 
 def get_model_info(filename: str, device: str = 'cpu') -> None:
     """
@@ -177,14 +193,15 @@ def save_checkpoint(pinn_instance: object, state: dict, is_best: bool) -> None:
 
     # Store initialization parameters.
     state['params'] = {
-        "model_class"         : pinn_instance.pinn.__class__.__name__,
         "model_kwargs"        : pinn_instance.model_kwargs,
         "domain_kwargs"       : pinn_instance.domain_kwargs,
+        "model_class"         : pinn_instance.model_class.__name__,
         "optimizer_class"     : pinn_instance.optimizer_class.__name__,
         "optimizer_kwargs"    : pinn_instance.optimizer_kwargs,
         "epochs"              : pinn_instance.epochs,
         "patience"            : pinn_instance.patience,
         "device"              : str(next(pinn_instance.pinn.parameters()).device),
+        "sampling_fn"         : pinn_instance.sampling_fn.__name__,
         "torch_version"       : torch.__version__,
         "random_seeds"        : {
             "torch"           : torch.initial_seed(),
@@ -259,3 +276,44 @@ def load_model(
             setattr(pinn_instance, key, value)
 
     pinn_instance.pinn.eval()
+
+
+def load_full_model(checkpoint_path: str, model_class: type) -> object:
+    """
+    Reconstructs and loads a trained PINN model from a checkpoint file.
+
+    Parameters
+    ----------
+    checkpoint_path : str
+        Path to the `.pth` checkpoint file.
+    model_class : type
+        Class of the PINN (e.g., UnitDiskGivenR).
+    sampling_fn : Callable or None
+        Sampling function. If None, the function will use the one saved in the checkpoint (if available).
+
+    Returns
+    -------
+    pinn : model_class instance
+        Reconstructed and loaded PINN instance.
+    """
+    checkpoint = torch.load(checkpoint_path, map_location = 'cpu', weights_only = False)
+    params = checkpoint['params']
+
+    model_cls     = MODEL_REGISTRY[params['model_class']]
+    optimizer_cls = OPTIMIZER_REGISTRY[params['optimizer_class']]
+
+    pinn = model_class(
+        model_class         = model_cls,
+        model_kwargs        = params['model_kwargs'],
+        domain_kwargs       = params['domain_kwargs'],
+        optimizer_class     = optimizer_cls,
+        optimizer_kwargs    = params['optimizer_kwargs'],
+        epochs              = params['epochs'],
+        patience            = params['patience'],
+        sampling_fn         = SAMPLING_REGISTRY[params['sampling_fn']],
+        checkpoint_filename = os.path.basename(checkpoint_path),
+)
+    
+    pinn.load_model(load_best = True)
+
+    return pinn
