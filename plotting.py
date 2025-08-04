@@ -34,6 +34,7 @@ References
     Journal of Computational Physics, 378, 686-707.
 """
 # Necessary libraries.
+import numpy as np                    # NumPy for numerical operations.
 import os, sys                        # OS and sys modules for file path operations.
 import torch                          # PyTorch library for tensor operations.
 import matplotlib.pyplot as plt       # Matplotlib for plotting.
@@ -252,6 +253,8 @@ def plot_solution_circle(
     ax.set_xlabel(r'$x$', fontsize = 15)
     ax.set_ylabel(r'$y$', fontsize = 15) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 15)
     ax.tick_params(axis = 'both', labelsize = 12)
+    ax.set_xticks(np.linspace(eje1[0].item(), eje1[-1].item(), 5))
+    ax.set_yticks(np.linspace(eje2[0].item(), eje2[-1].item(), 5))
     ax.zaxis.set_tick_params(labelsize = 12)
     if time_dependent:
         if parameters:
