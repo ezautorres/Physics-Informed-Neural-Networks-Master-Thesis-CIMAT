@@ -490,3 +490,55 @@ def plot_comparison_contour_circle(
         plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
     if created_figure:
         plt.show()
+
+def plot_joint_posteriors(
+        samples1: np.ndarray, samples2: np.ndarray, par_true: float = None, par_names: str = None,
+        bins: int = 30, ax: Optional[plt.Axes] = None, filename: str = None
+    ):
+    """
+    Plot two posterior histograms (e.g., from MCMC samples) on the same axes.
+
+    Parameters
+    ----------
+    samples1 : np.ndarray
+        MCMC samples from the first posterior.
+    samples2 : np.ndarray
+        MCMC samples from the second posterior.
+    par_true : float, optional
+        Ground truth value to mark with a vertical line.
+    par_names : str, optional
+        Name of the parameter being inferred, used for labeling.
+    bins : int
+        Number of bins in the histogram.
+    ax : matplotlib.axes.Axes, optional
+        Existing matplotlib axis to draw the histograms on. If None, a new figure will be created.
+    filename : str, optional
+        Path to save the figure (as .pdf).
+    """
+    # Create a new figure and axis if not provided.
+    created_figure = False
+    if ax is None:
+        fig, ax = plt.subplots(figsize = (10,6))
+        created_figure = True
+    
+    ax.hist(samples1.flatten(), bins = bins, alpha = 0.8, label = "Analytical solution",
+            color = '#1f77b4', edgecolor = '#1f77b4', density = True)
+    ax.hist(samples2.flatten(), bins = bins, alpha = 0.7, label = "PINN solution",
+            color = '#ff7f0e', edgecolor = '#ff7f0e', density = True)
+
+    if par_true is not None:
+        ax.axvline(x = par_true, color = "red", linestyle = "-", linewidth = 3,
+                   label = fr"True {par_names} = {par_true}")
+
+    ax.legend(fontsize = 14)
+    if par_names:
+        ax.set_xlabel(par_names, fontsize = 14)
+    ax.set_ylabel("Density", fontsize = 14)
+    ax.grid(True)
+    plt.tight_layout()
+
+    if filename:
+        path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
+        plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
+    if created_figure:
+        plt.show()

@@ -302,7 +302,7 @@ if __name__ == "__main__":
     infer_rho_pinn.load_model(load_best = True) # Load the best model.
     plot_solution_circle(
         model_instance = infer_rho_pinn,
-        domain_kwargs  = domain_kwargs,
+        domain_kwargs  = domain_kwargs, 
         parameters     = [0.85, 3.2],
         filename       = "solution_plot.png"
     )

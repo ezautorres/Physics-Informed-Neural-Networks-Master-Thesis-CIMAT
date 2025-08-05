@@ -40,14 +40,16 @@ References
 """
 # Necessary libraries.
 import numpy as np            # NumPy for numerical operations.
+import pandas as pd           # Pandas for data manipulation.
 import torch                  # PyTorch library for tensor operations.
+import scipy.stats as stats   # SciPy for statistical functions.
 import os, sys                # OS module for file operations.
 import shutil                 # Shutil module for file operations.
 import datetime               # Datetime module for timestamping.
 import random                 # Random module for reproducibility.
 from architectures import MLP # Import the MLP architecture.
 import torch.optim            # PyTorch optimizers.
-from sampling import sample_circle_uniform_center_restriction
+from sampling import sample_circle_uniform_center_restriction, sample_square_uniform
 
 # Map string names to actual classes
 MODEL_REGISTRY = {
@@ -58,7 +60,7 @@ OPTIMIZER_REGISTRY = {
     "Adam"  : torch.optim.Adam,
 }
 SAMPLING_REGISTRY = {
-    "sample_square_uniform"                    : sample_circle_uniform_center_restriction,
+    "sample_square_uniform"                    : sample_square_uniform,
     "sample_circle_uniform_center_restriction" : sample_circle_uniform_center_restriction,
 }
 
@@ -222,10 +224,7 @@ def save_checkpoint(pinn_instance: object, state: dict, is_best: bool) -> None:
         best_path = os.path.join(pinn_instance.checkpoint_path, pinn_instance.best_model_filename)
         shutil.copyfile(filepath, best_path)
 
-
-def load_model(
-        pinn_instance: object, filename: str = "checkpoint.pth", load_best: bool = True, device: str = 'cpu'
-        ) -> None:
+def load_model(pinn_instance: object, filename: str = None, load_best: bool = True, device: str = 'cpu') -> None:
     """
     Restores a trained PINN model and its metadata from a saved checkpoint. This function loads either
     the best model or the last training state from a checkpoint, restores training history, and updates
@@ -236,10 +235,9 @@ def load_model(
     pinn_instance : object
         The PINN wrapper instance. Its model and training metadata will be updated in-place.
     filename : str, optional
-        Path to the checkpoint file. Default is 'checkpoint.pth'.
+        Path to the checkpoint file. If None, it uses `trained_models/<checkpoint_filename>` relative to the script.
     load_best : bool, optional
-        If True and available, loads the best model weights. Otherwise loads the latest state. Default is
-        True.
+        If True and available, loads the best model weights. Otherwise loads the latest state. Default is True.
     device : str, optional
         Device to load the model onto ('cpu' or 'cuda'). Default is 'cpu'.
 
@@ -248,6 +246,10 @@ def load_model(
     None
         Updates `pinn_instance` in-place with model weights and metadata.
     """
+    if filename is None:
+        script_dir = os.path.dirname(os.path.abspath(sys.modules["__main__"].__file__))
+        filename = os.path.join(script_dir, "trained_models", pinn_instance.checkpoint_filename)
+
     checkpoint = torch.load(filename, map_location = torch.device(device), weights_only = False)
 
     # Load model weights.
@@ -270,13 +272,12 @@ def load_model(
     pinn_instance.loss_history     = checkpoint.get('loss_history', [])
     pinn_instance.val_loss_history = checkpoint.get('val_loss_history', [])
 
-    # Restore initialization parameters (if they were saved).
+    # Restore initialization parameters (optional).
     if 'params' in checkpoint:
         for key, value in checkpoint['params'].items():
             setattr(pinn_instance, key, value)
 
     pinn_instance.pinn.eval()
-
 
 def load_full_model(checkpoint_path: str, model_class: type) -> object:
     """
@@ -285,17 +286,20 @@ def load_full_model(checkpoint_path: str, model_class: type) -> object:
     Parameters
     ----------
     checkpoint_path : str
-        Path to the `.pth` checkpoint file.
+        Path to the checkpoint file (e.g., 'trained_models/infer_conductivity_value_MLP.pth').
     model_class : type
-        Class of the PINN (e.g., UnitDiskGivenR).
-    sampling_fn : Callable or None
-        Sampling function. If None, the function will use the one saved in the checkpoint (if available).
+        The class of the model to be loaded (e.g., InferringConductivityValue).
 
     Returns
     -------
-    pinn : model_class instance
-        Reconstructed and loaded PINN instance.
+    pinn : object
+        An instance of the model class with loaded weights and training state.  
     """
+    if not os.path.isabs(checkpoint_path):
+        caller_path = os.path.abspath(sys.argv[0])
+        script_dir = os.path.dirname(caller_path)
+        checkpoint_path = os.path.join(script_dir, checkpoint_path)
+
     checkpoint = torch.load(checkpoint_path, map_location = 'cpu', weights_only = False)
     params = checkpoint['params']
 
@@ -312,8 +316,90 @@ def load_full_model(checkpoint_path: str, model_class: type) -> object:
         patience            = params['patience'],
         sampling_fn         = SAMPLING_REGISTRY[params['sampling_fn']],
         checkpoint_filename = os.path.basename(checkpoint_path),
-)
-    
-    pinn.load_model(load_best = True)
+    )
+
+    load_model(pinn, filename = checkpoint_path, load_best = True)
 
     return pinn
+
+def load_samples_from_csv(filename: str) -> dict:
+    """
+    Load MCMC samples and execution time from a CSV file.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the file to load the samples from.
+
+    Returns
+    -------
+    dict
+        Dictionary containing:
+            - "samples": MCMC samples as np.ndarray
+            - "execution_time": float or None if not present
+    """
+    script_dir = os.path.dirname(os.path.abspath(sys.modules["__main__"].__file__))
+    path = os.path.join(script_dir, filename)
+    df = pd.read_csv(path)
+
+    # Check if execution_time column exists.
+    if "execution_time" in df.columns:
+        execution_time = df["execution_time"].iloc[0] 
+        samples = df.drop(columns = ["execution_time"]).values
+    else:
+        execution_time = None
+        samples = df.values
+
+    return {
+        "samples"        : samples,
+        "execution_time" : execution_time
+    }
+
+def summarize_results(samples: np.ndarray | dict, par_true: float) -> dict:
+    """
+    Compute and print summary statistics for MCMC samples.
+
+    Parameters
+    ----------
+    samples : np.ndarray or dict
+        The MCMC samples to analyze, or a dictionary with keys 'samples' and 'execution_time'.
+    par_true : float
+        The true value of the parameter for reference.
+
+    Returns
+    -------
+    dict
+        Dictionary containing mean, median, mode, std, percentiles, and (optionally) execution time.
+    """
+    # Allow both formats: raw array or dictionary from `load_samples_from_csv`
+    if isinstance(samples, dict):
+        execution_time = samples.get("execution_time", None)
+        samples = samples["samples"]
+    else:
+        execution_time = None
+
+    mean     = np.mean(samples)
+    median   = np.median(samples)
+    mode     = stats.mode(samples, axis = None, keepdims = False)[0]
+    std      = np.std(samples)
+    q16, q84 = np.percentile(samples[:,0], [16,84])
+
+    print("\n" + 50 * "-" + f"\nResults:\n" + 50 * "-")
+    print(f"True value     : {par_true:.6f}")
+    print(f"Mean           : {mean:.6f}")
+    print(f"Median         : {median:.6f}")
+    print(f"Mode           : {mode:.6f}")
+    print(f"Std            : {std:.6f}")
+    print(f"16th percent   : {q16:.6f}")
+    print(f"84th percent   : {q84:.6f}")
+    print(f"Execution time : {execution_time:.2f} seconds")
+
+    return {
+        "mean"           : mean,
+        "median"         : median,
+        "mode"           : mode,
+        "std"            : std,
+        "q16"            : q16,
+        "q84"            : q84,
+        "execution_time" : execution_time,
+    }
