@@ -104,9 +104,9 @@ class MCMC:
         df.to_csv(path, index = False)
 
 def MCMCInference(
-        filename: str, forward_map: Callable, data_x: np.ndarray, data_u: np.ndarray, par_names: str,
-        par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 0.01, n_iter: int = 100000,
-        burn_in: int = 10000,
+    filename: str, forward_map: Callable, data_x: np.ndarray, data_u: np.ndarray, par_names: str,
+    par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 0.01, n_iter: int = 100000,
+    burn_in: int = 10000,
 ):
     """
     Run MCMC inference or load samples from file if available.
@@ -138,8 +138,8 @@ def MCMCInference(
 
     Returns
     -------
-    samples : np.ndarray
-        The MCMC samples (after burn-in).
+    samples : dict
+        Dictionary with keys 'samples' (np.ndarray) and 'execution_time' (float).
     stats : dict
         Dictionary with summary statistics.
     """
@@ -160,9 +160,11 @@ def MCMCInference(
         )
         twalk.run_mcmc()
         twalk.save_samples_to_csv(filename = filename)
-        samples = twalk.samples
+        samples = {
+            "samples"        : twalk.samples,
+            "execution_time" : twalk.execution_time,
+        }
 
     stats = summarize_results(samples = samples, par_true = par_true)
 
     return samples, stats
-    

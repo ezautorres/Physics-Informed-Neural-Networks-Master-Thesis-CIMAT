@@ -257,15 +257,15 @@ if __name__ == "__main__":
     # Architecture and optimizer parameters.
     # ---------------------------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize'  : 4,                     # Input size of the MLP (2D coordinates + 2 parameters).
-        'hidden_lys' : [100, 1000, 100, 100], # Hidden layers of the MLP.
-        'outputSize' : 1                      # Output size of the MLP.
+        'inputSize'  : 4,       # Input size of the MLP (2D coordinates + 2 parameters).
+        'hidden_lys' : [50]*10, # Hidden layers of the MLP.
+        'outputSize' : 1        # Output size of the MLP.
     }
     
     optimizer_class = torch.optim.LBFGS
     optimizer_kwargs = {
-        'lr'               : 1,             # Learning rate.
-        'max_iter'         : 100,           # Maximum number of iterations.
+        'lr'               : 0.7,           # Learning rate.
+        'max_iter'         : 30,            # Maximum number of iterations.
         'tolerance_grad'   : 1e-09,         # Tolerance for the gradient.
         'tolerance_change' : 1e-09,         # Tolerance for the change in the loss.
         'history_size'     : 100,           # History size for the optimizer.

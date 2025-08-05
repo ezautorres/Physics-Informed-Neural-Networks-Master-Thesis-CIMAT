@@ -533,7 +533,8 @@ def plot_joint_posteriors(
     ax.legend(fontsize = 14)
     if par_names:
         ax.set_xlabel(par_names, fontsize = 14)
-    ax.set_ylabel("Density", fontsize = 14)
+    ax.set_ylabel("density", fontsize = 14)
+    ax.tick_params(axis = 'both', labelsize = 12)
     ax.grid(True)
     plt.tight_layout()
 

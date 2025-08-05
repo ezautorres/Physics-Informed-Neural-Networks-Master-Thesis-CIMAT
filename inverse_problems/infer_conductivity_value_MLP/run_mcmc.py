@@ -27,7 +27,7 @@ par_prior = [stats.uniform(0,10)]        # Prior distribution for the parameters
 par_supp  = [lambda rho: 0 <= rho <= 10] # Support function for the prior distributions.
 sigma     = 0.01                         # Standard deviation for the noise in the data.
 n_iter    = 100000                       # Number of MCMC iterations.
-burn_in   = 10000                        # Number of burn-in iterations.
+burn_in   = int(0.1 * n_iter)            # Burn-in period.
 
 # Observed data points (x,u) for the inference.
 data_x = np.array([
@@ -123,5 +123,5 @@ plot_joint_posteriors(
     par_true  = par_true,
     par_names = r"$\rho$",
     bins      = 30,
-    filename  = "posterior_comparison.pdf"
+    filename  = "posterior_comparison.png"
 )

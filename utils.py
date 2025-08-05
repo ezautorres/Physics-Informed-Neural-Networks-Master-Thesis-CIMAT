@@ -334,25 +334,20 @@ def load_samples_from_csv(filename: str) -> dict:
     Returns
     -------
     dict
-        Dictionary containing:
-            - "samples": MCMC samples as np.ndarray
-            - "execution_time": float or None if not present
+        A dictionary with keys:
+        - 'samples' : np.ndarray of samples (without execution time column).
+        - 'execution_time' : float with execution time (from last column).
     """
     script_dir = os.path.dirname(os.path.abspath(sys.modules["__main__"].__file__))
     path = os.path.join(script_dir, filename)
     df = pd.read_csv(path)
 
-    # Check if execution_time column exists.
-    if "execution_time" in df.columns:
-        execution_time = df["execution_time"].iloc[0] 
-        samples = df.drop(columns = ["execution_time"]).values
-    else:
-        execution_time = None
-        samples = df.values
+    samples = df.iloc[:, :-1].values
+    execution_time = df.iloc[0, -1]  # se guarda la misma en todas las filas
 
     return {
         "samples"        : samples,
-        "execution_time" : execution_time
+        "execution_time" : float(execution_time),
     }
 
 def summarize_results(samples: np.ndarray | dict, par_true: float) -> dict:
