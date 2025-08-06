@@ -4,6 +4,8 @@ trash/
 
 forward_problems/poisson_MLP/trained_models/
 forward_problems/laplace_MLP/trained_models/
+forward_problems/helmholtz_MLP/trained_models/
+forward_problems/diffusion_nonhomogeneous_MLP/trained_models/
 
 inverse_problems/infer_conductivity_value_MLP/trained_models/
 inverse_problems/infer_conductivity_value_MLP/samples_analytical.csv
