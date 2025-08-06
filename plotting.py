@@ -102,8 +102,8 @@ def plot_loss(
 
 def plot_solution_square(
         model_instance: Callable, domain_kwargs: dict, parameters: Optional[list] = None,
-        filename: Optional[str] = None, ax: Optional[plt.Axes] = None, time_dependent: bool = False
-        ) -> None:
+        filename: Optional[str] = None, ax: Optional[plt.Axes] = None, time_dependent: bool = False,
+        adjust_zlim: bool = False) -> None:
     """
     Plots the model prediction $\boldsymbol{\hat{u}}_{w}(\mathbf{x}, t; \theta)$ over a 2D square domain.
     This function evaluates the PINN model over a structured grid defined by `domain_kwargs` and produces
@@ -133,6 +133,8 @@ def plot_solution_square(
         Existing 3D axis to draw the surface plot on. If not provided, a new figure will be created.
     time_dependent : bool, optional
         If True, labels the vertical axis as time ($t$). Otherwise, labels are shown as spatial ($x,y$).
+    adjust_zlim : bool, optional
+        If True, adjusts the z-axis limits based on the valid data range.
 
     Returns
     -------
@@ -163,7 +165,14 @@ def plot_solution_square(
     ax.set_xlabel(r'$x$', fontsize = 15)
     ax.set_ylabel(r'$y$', fontsize = 15) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 15)
     ax.tick_params(axis = 'both', labelsize = 12)
-    ax.zaxis.set_tick_params(labelsize = 12)
+    ax.tick_params(axis = 'z', labelsize = 12)
+    ax.set_xticks(np.linspace(eje1[0].item(), eje1[-1].item(), 5))
+    ax.set_yticks(np.linspace(eje2[0].item(), eje2[-1].item(), 5))
+    if adjust_zlim:
+        Z_valid = Z[~torch.isnan(Z)]
+        zmin, zmax = Z_valid.min().item(), Z_valid.max().item()
+        ax.set_zlim(zmin, zmax)
+        ax.set_zticks(torch.linspace(zmin, zmax, 5).tolist())  
     if time_dependent:
         if parameters:
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,t;\theta)$'
@@ -192,8 +201,8 @@ def plot_solution_square(
 
 def plot_solution_circle(
         model_instance: Callable, domain_kwargs: dict, parameters: Optional[list] = None,
-        filename: Optional[str] = None, ax: Optional[plt.Axes] = None, time_dependent: bool = False
-        ) -> None:
+        filename: Optional[str] = None, ax: Optional[plt.Axes] = None, time_dependent: bool = False,
+        adjust_zlim: bool = False) -> None:
     """
     Plots the model prediction $\boldsymbol{\hat{u}}_{w}(\mathbf{x}, t; \theta)$ over a circular domain.
     This function evaluates a PINN model over a structured grid defined by the bounding square of a circular
@@ -218,6 +227,8 @@ def plot_solution_circle(
         Existing 3D axis object to render the plot. If None, a new figure will be created.
     time_dependent : bool, optional
         If True, labels the vertical axis as time ($t$). Otherwise, labels are shown as spatial ($x,y$).
+    adjust_zlim : bool, optional
+        If True, adjusts the z-axis limits based on the valid data range.
 
     Returns
     -------
@@ -253,9 +264,14 @@ def plot_solution_circle(
     ax.set_xlabel(r'$x$', fontsize = 15)
     ax.set_ylabel(r'$y$', fontsize = 15) if not time_dependent else ax.set_ylabel(r'$t$', fontsize = 15)
     ax.tick_params(axis = 'both', labelsize = 12)
+    ax.tick_params(axis = 'z', labelsize = 12)
     ax.set_xticks(np.linspace(eje1[0].item(), eje1[-1].item(), 5))
     ax.set_yticks(np.linspace(eje2[0].item(), eje2[-1].item(), 5))
-    ax.zaxis.set_tick_params(labelsize = 12)
+    if adjust_zlim:
+        Z_valid = Z[~torch.isnan(Z)]
+        zmin, zmax = Z_valid.min().item(), Z_valid.max().item()
+        ax.set_zlim(zmin, zmax)
+        ax.set_zticks(torch.linspace(zmin, zmax, 5).tolist())
     if time_dependent:
         if parameters:
             zlabel = r'$\boldsymbol{\hat{u}}_{w}(x,t;\theta)$'
@@ -366,7 +382,7 @@ def plot_comparison_contour_square(
 
     # Set common labels for all subplots.
     fig.supxlabel(r'$x$', fontsize = 20, y = 0.03)
-    fig.supylabel(r'$y$', fontsize = 20, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 20, x = 0.08)
+    fig.supylabel(r'$y$', fontsize = 20, x = 0.08) if not time_dependent else fig.supylabel(r'$t$', fontsize = 20, x = 0.06)
 
     # Colorbar for solution plots (left two).
     cbar_ax1 = fig.add_axes([0.92, 0.58, 0.015, 0.30])

@@ -306,116 +306,100 @@ def sample_circle_uniform_center_restriction(
 
         return X_val
     
-#def sample_circular_grid_points(
-#    center: Tuple[float, float],
-#    radius: float,
-#    interiorSize: int,
-#    boundarySize: int,
-#    auxiliarySize: int,
-#    valSize: int = None,
-#    fixed_params: Tuple = None,
-#    param_domains: List[Tuple] = None,
-#    train: bool = True,
-#    device: str = 'cpu'
-#) -> torch.Tensor:
-#    """
-#    Sample points in circular domain using a structured grid and mask, 
-#    but return only N interior, N boundary, and N center points, in that order.
-#    """
-#    def get_points(mask, grid_flat, n):
-#        points = grid_flat[mask]
-#        if len(points) < n:
-#            raise ValueError("Not enough points inside the mask to sample from.")
-#        indices = torch.randperm(len(points))[:n]
-#        return points[indices]
-#
-#    # Generate structured grid
-#    resolution = 2056
-#    x = torch.linspace(center[0] - radius, center[0] + radius, resolution)
-#    y = torch.linspace(center[1] - radius, center[1] + radius, resolution)
-#    X, Y = torch.meshgrid(x, y, indexing='ij')
-#    grid = torch.stack([X, Y], dim=-1).reshape(-1, 2)
-#
-#    # Compute distance from center
-#    r = torch.linalg.norm(grid - torch.tensor(center), dim=1)
-#
-#    # Define masks
-#    interior_mask = r < radius * 0.98
-#    boundary_mask = (r >= radius * 0.98) & (r <= radius * 1.01)
-#    #center_mask = r < radius * 0.05  # very close to center
-#    center_mask = r < radius * 0.15
-#
-#    # Sample points
-#    X_int = get_points(interior_mask, grid, interiorSize)
-#    X_bnd = get_points(boundary_mask, grid, boundarySize)
-#    X_ctr = get_points(center_mask, grid, auxiliarySize)
-#
-#    X_total = torch.cat([X_int, X_bnd, X_ctr], dim=0)
-#
-#    # Add parameters
-#    if fixed_params is not None:
-#        params = torch.tensor(fixed_params, dtype=torch.float32).repeat(len(X_total), 1)
-#        X_total = torch.cat([X_total, params], dim=1)
-#
-#    if param_domains is not None:
-#        n_params = len(param_domains)
-#        params = torch.rand(len(X_total), n_params)
-#        for i in range(n_params):
-#            a, b = param_domains[i]
-#            params[:, i] = params[:, i] * (b - a) + a
-#        X_total = torch.cat([X_total, params], dim=1)
-#
-#    X_total = X_total.to(device)
-#    if train:
-#        X_total.requires_grad_()
-#
-#    return X_total
-#
-#import numpy as np
-#import torch
-#
-#def generate_structured_circular_grid(center, radius, resolution, fixed_params=None, device='cpu'):
-#    """
-#    Creates a 2D grid over the bounding box of a circle and masks out-of-domain points.
-#
-#    Parameters
-#    ----------
-#    center : tuple of float
-#        (x0, y0) center of the circle.
-#    radius : float
-#        Radius of the circle.
-#    resolution : int
-#        Number of points per axis (generates resolution x resolution grid).
-#    fixed_params : tuple of floats, optional
-#        Additional parameters like (ρ, R) to be appended as channels.
-#    device : str
-#        Device for returned tensors.
-#
-#    Returns
-#    -------
-#    input_tensor : torch.Tensor
-#        Shape: (1, C, H, W), where C = 2 + len(fixed_params)
-#    mask : torch.Tensor
-#        Shape: (H, W), True for points inside the circle
-#    """
-#
-#    x = np.linspace(center[0] - radius, center[0] + radius, resolution)
-#    y = np.linspace(center[1] - radius, center[1] + radius, resolution)
-#    grid_x, grid_y = np.meshgrid(x, y, indexing='ij')
-#
-#    dist_sq = (grid_x - center[0]) ** 2 + (grid_y - center[1]) ** 2
-#    mask = dist_sq <= radius ** 2
-#
-#    # Build channels
-#    input_channels = [grid_x, grid_y]  # shape (H, W)
-#    if fixed_params:
-#        for param in fixed_params:
-#            param_array = np.full_like(grid_x, param)
-#            input_channels.append(param_array)
-#
-#    # Stack into shape (C, H, W)
-#    input_array = np.stack(input_channels, axis=0)
-#    input_tensor = torch.tensor(input_array, dtype=torch.float32, device=device).unsqueeze(0)  # (1, C, H, W)
-#    mask_tensor = torch.tensor(mask, dtype=torch.bool, device=device)
-#
-#    return input_tensor, mask_tensor
+def generate_square_grid_points(
+    dim1_min: float, dim1_max: float,
+    dim2_min: float, dim2_max: float,
+    interiorSize: int,
+    dim1_minSize: int, dim1_maxSize: int,
+    dim2_minSize: int, dim2_maxSize: int,
+    valSize: int,
+    fixed_params: Tuple = None,
+    param_domains: List[Tuple] = None,
+    train: bool = True,
+    device: str = 'cpu'
+) -> torch.Tensor:
+    """
+    Generates a structured grid of (x, y) points over a square domain for CNN-based PINNs.
+
+    Parameters follow the same convention as in `sample_square_uniform` to ensure full compatibility.
+
+    Parameters
+    ----------
+    [same as in sample_square_uniform]
+
+    Returns
+    -------
+    torch.Tensor
+        Tensor of shape (N, 2 + n_params) if parametric, or (N, 2) otherwise. Structured grid if train=True,
+        or validation grid if train=False.
+    """
+
+    # Check domain validity
+    if dim1_min >= dim1_max or dim2_min >= dim2_max:
+        raise ValueError("Invalid domain bounds.")
+
+    # Determine grid resolution (sqrt of interiorSize)
+    resolution = int(interiorSize**0.5)
+    if resolution**2 != interiorSize:
+        raise ValueError("For structured grid, interiorSize must be a perfect square.")
+
+    # Create regular grid over the domain
+    x = torch.linspace(dim1_min, dim1_max, resolution)
+    y = torch.linspace(dim2_min, dim2_max, resolution)
+    X, Y = torch.meshgrid(x, y, indexing='ij')  # Shape: (res, res)
+    grid = torch.stack((X, Y), dim=2).reshape(-1, 2)  # Shape: (interiorSize, 2)
+
+    # Combine with boundary points if train=True
+    if train:
+        # Generate random boundary points (same as in sample_square_uniform)
+        def boundary_points(num_points, fixed_dim, fixed_value, var_min, var_max, dim_index):
+            points = var_min + (var_max - var_min) * torch.rand(num_points, 2)
+            points[:, dim_index] = fixed_value
+            return points
+
+        boundaries = [
+            boundary_points(dim1_minSize, 0, dim1_min, dim2_min, dim2_max, 1),
+            boundary_points(dim1_maxSize, 0, dim1_max, dim2_min, dim2_max, 1),
+            boundary_points(dim2_minSize, 1, dim2_min, dim1_min, dim1_max, 0),
+            boundary_points(dim2_maxSize, 1, dim2_max, dim1_min, dim1_max, 0),
+        ]
+        boundary_grid = torch.vstack(boundaries)
+
+        X_total = torch.vstack((grid, boundary_grid))
+
+    else:
+        # Validation grid
+        val_res = int((valSize // 5)**0.5)
+        if val_res**2 * 5 != valSize:
+            raise ValueError("valSize must be divisible by 5 and yield square regions.")
+
+        X_total = []
+
+        def val_grid(xmin, xmax, ymin, ymax):
+            x = torch.linspace(xmin, xmax, val_res)
+            y = torch.linspace(ymin, ymax, val_res)
+            X, Y = torch.meshgrid(x, y, indexing='ij')
+            return torch.stack((X, Y), dim=2).reshape(-1, 2)
+
+        X_total.append(val_grid(dim1_min, dim1_max, dim2_min, dim2_max))  # Interior
+        X_total.append(val_grid(dim1_min, dim1_min, dim2_min, dim2_max))  # Left
+        X_total.append(val_grid(dim1_max, dim1_max, dim2_min, dim2_max))  # Right
+        X_total.append(val_grid(dim1_min, dim1_max, dim2_min, dim2_min))  # Bottom
+        X_total.append(val_grid(dim1_min, dim1_max, dim2_max, dim2_max))  # Top
+
+        X_total = torch.vstack(X_total)
+
+    # Append parameters if needed
+    if fixed_params is not None:
+        params = torch.tensor(fixed_params).repeat(len(X_total), 1)
+        X_total = torch.cat((X_total, params), dim=1)
+
+    if param_domains is not None:
+        n_params = len(param_domains)
+        params = torch.rand(len(X_total), n_params)
+        for i in range(n_params):
+            min_val, max_val = param_domains[i]
+            params[:, i] = params[:, i] * (max_val - min_val) + min_val
+        X_total = torch.cat((X_total, params), dim=1)
+
+    return X_total.requires_grad_(train).to(device)

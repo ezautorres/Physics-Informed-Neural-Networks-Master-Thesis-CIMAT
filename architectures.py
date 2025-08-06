@@ -139,3 +139,84 @@ class CNNPINN(nn.Module):
         features = features.permute(0, 2, 3, 1).squeeze(0)  # (H, W, C_out)
         out = self.mlp(features)  # (H, W, output_size)
         return out.squeeze(-1)  # (H, W)
+    
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class ConvNet2D(nn.Module):
+    """
+    2D Convolutional Neural Network for structured PINNs.
+
+    Assumes that input points lie on a regular grid (e.g., 100x100 = 10,000 points).
+    """
+
+    def __init__(self, grid_size: int = 100, hidden_channels: int = 32):
+        """
+        Parameters
+        ----------
+        grid_size : int
+            Number of points per axis (e.g., 100 for 100x100 grid).
+        hidden_channels : int
+            Number of hidden channels in the convolutional layers.
+        """
+        super(ConvNet2D, self).__init__()
+
+        self.grid_size = grid_size
+
+        self.encoder = nn.Sequential(
+            nn.Conv2d(1, hidden_channels, kernel_size=3, padding=1),
+            nn.Tanh(),
+            nn.Conv2d(hidden_channels, hidden_channels, kernel_size=3, padding=1),
+            nn.Tanh(),
+            nn.Conv2d(hidden_channels, 1, kernel_size=3, padding=1)
+        )
+
+        # Will be populated in forward_full_grid()
+        self.full_grid = None
+        self.full_output = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Evaluates the model assuming x is structured grid (flattened).
+        """
+        assert x.shape[0] == self.grid_size**2 and x.shape[1] == 2, \
+            f"Expected input of shape ({self.grid_size**2}, 2), got {x.shape}"
+
+        # Reshape into grid
+        x1 = x[:, 0].reshape(self.grid_size, self.grid_size)
+        x2 = x[:, 1].reshape(self.grid_size, self.grid_size)
+
+        # Stack as input channel
+        input_tensor = torch.sin(torch.pi * x1) * torch.sin(torch.pi * x2)  # Just to test
+        input_tensor = input_tensor.unsqueeze(0).unsqueeze(0)  # [1,1,H,W]
+
+        out = self.encoder(input_tensor)  # [1,1,H,W]
+        return out.view(-1, 1)  # Flatten back to (N,1)
+
+    def forward_full_grid(self):
+        """
+        Evaluates the CNN over a structured grid and stores the output.
+
+        This must be called before evaluate_points().
+        """
+        lin = torch.linspace(0, 1, self.grid_size)
+        x, y = torch.meshgrid(lin, lin, indexing='ij')
+        grid = torch.stack([x, y], dim=-1).view(-1, 2).to(next(self.parameters()).device)
+
+        self.full_grid = grid  # (N,2)
+        self.full_output = self(grid).view(1, 1, self.grid_size, self.grid_size)  # (1,1,H,W)
+
+    def evaluate_points(self, points: torch.Tensor) -> torch.Tensor:
+        """
+        Interpolates arbitrary points from the CNN output on the structured grid.
+        """
+        if self.full_grid is None or self.full_output is None:
+            raise RuntimeError("You must call forward_full_grid() before evaluate_points().")
+
+        # Normalize points to [-1, 1] for grid_sample
+        coords = 2.0 * points - 1.0
+        coords = coords.view(1, -1, 1, 2)  # [1, N, 1, 2] for grid_sample
+
+        interpolated = F.grid_sample(self.full_output, coords, mode='bilinear', align_corners=True)
+        return interpolated.view(-1, 1)

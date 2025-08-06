@@ -114,7 +114,7 @@ class PoissonPinn(PinnBase):
         X_bc  = X[N_pde:]  # Points for the boundary conditions.
 
         # -----------------------------------------------------------------------------------------------
-        # PDE loss: 𝚫u = -2π²sin(πx)sin(πy). 
+        # PDE loss: N[u] = f => 𝚫u = -2π²sin(πx)sin(πy).
         # -----------------------------------------------------------------------------------------------
         u_pde = net(X_pde)                                                                                        # Compute the model output for the PDE points.
         grad_u = torch.autograd.grad(u_pde, X_pde, grad_outputs = torch.ones_like(u_pde), create_graph = True)[0] # ∇u, grad_u[:,0] = ∂u/∂x, grad_u[:,1] = ∂u/∂y.
@@ -126,7 +126,7 @@ class PoissonPinn(PinnBase):
         loss_pde = torch.mean((u_xx + u_yy - source)**2) 
 
         # -----------------------------------------------------------------------------------------------
-        # Boundary condition loss: u(x,0) = 0, u(x,1) = 0, u(0,y) = 0, u(1,y) = 0.
+        # Boundary condition loss: B[u] = g => u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
         # -----------------------------------------------------------------------------------------------
         loss_bc = torch.mean(net(X_bc)**2) # Compute the boundary condition loss.
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     model_kwargs = {
         'inputSize'  : 2,               # Because we do not have parameters.
         'hidden_lys' : [100, 100, 100], # Hidden layers of the MLP.
-        'outputSize' : 1                # Output size of the MLP (1 for the Poisson equation).
+        'outputSize' : 1                # Output size of the MLP.
     }
     
     optimizer_class = torch.optim.LBFGS
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     # Plot the loss and the solution.
     plot_loss(
         model_instance = poisson_pinn,
-        filename       = "loss_plot.pdf"
+        filename       = "loss_plot.png"
     )
 
     # Plot the solution with the best model.
@@ -214,12 +214,12 @@ if __name__ == "__main__":
     plot_solution_square(
         model_instance = poisson_pinn,
         domain_kwargs  = domain_kwargs,
-        filename       = "solution_plot.pdf"
+        filename       = "solution_plot.png"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(
         model_instance = poisson_pinn,
         domain_kwargs  = domain_kwargs,
-        filename       = "comparison_plot.pdf"
+        filename       = "comparison_plot.png"
     )
