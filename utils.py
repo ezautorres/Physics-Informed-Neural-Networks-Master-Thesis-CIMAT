@@ -352,7 +352,7 @@ def load_samples_from_csv(filename: str) -> dict:
         "execution_time" : float(execution_time),
     }
 
-def summarize_results(samples: np.ndarray | dict, par_true: float) -> dict:
+def summarize_results2(samples: np.ndarray | dict, par_true: float) -> dict:
     """
     Compute and print summary statistics for MCMC samples.
 
@@ -400,3 +400,85 @@ def summarize_results(samples: np.ndarray | dict, par_true: float) -> dict:
         "q84"            : q84,
         "execution_time" : execution_time,
     }
+
+from typing import Sequence, Optional, Union
+import numpy as np
+from scipy import stats
+
+def summarize_results(
+    samples: Union[np.ndarray, dict],
+    par_true: Union[float, Sequence[float]],
+    par_names: Optional[Sequence[str]] = None
+) -> dict:
+    """
+    Compute and print summary statistics for MCMC samples.
+    Supports single or multiple parameters.
+
+    Parameters
+    ----------
+    samples : np.ndarray or dict
+        The MCMC samples to analyze, or a dictionary with keys 'samples' and 'execution_time'.
+    par_true : float or list/tuple of floats
+        The true value(s) of the parameter(s) for reference.
+    par_names : list of str, optional
+        Names of the parameters to print.
+
+    Returns
+    -------
+    dict
+        Dictionary containing statistics for each parameter.
+    """
+    # Si es dict, extraer
+    if isinstance(samples, dict):
+        execution_time = samples.get("execution_time", None)
+        samples = samples["samples"]
+    else:
+        execution_time = None
+
+    samples = np.atleast_2d(samples)
+    if samples.shape[0] < samples.shape[1]:
+        samples = samples.T  # (N, P)
+
+    n_params = samples.shape[1]
+
+    # Normalizar par_true a array
+    if np.isscalar(par_true):
+        par_true = [par_true] * n_params
+    par_true = np.array(par_true, dtype=float)
+
+    # Nombres por defecto
+    if par_names is None:
+        par_names = [f"param_{i+1}" for i in range(n_params)]
+
+    stats_dict = {}
+
+    for j in range(n_params):
+        mean   = np.mean(samples[:, j])
+        median = np.median(samples[:, j])
+        mode   = stats.mode(samples[:, j], axis=None, keepdims=False)[0]
+        std    = np.std(samples[:, j])
+        q16, q84 = np.percentile(samples[:, j], [16, 84])
+
+        # Bloque de impresión idéntico al anterior, repetido por parámetro
+        print("\n" + 50 * "-" + f"\nResults for {par_names[j]}:\n" + 50 * "-")
+        print(f"True value     : {par_true[j]:.6f}")
+        print(f"Mean           : {mean:.6f}")
+        print(f"Median         : {median:.6f}")
+        print(f"Mode           : {mode:.6f}")
+        print(f"Std            : {std:.6f}")
+        print(f"16th percent   : {q16:.6f}")
+        print(f"84th percent   : {q84:.6f}")
+        if execution_time is not None:
+            print(f"Execution time : {execution_time:.2f} seconds")
+
+        stats_dict[par_names[j]] = {
+            "mean": mean,
+            "median": median,
+            "mode": mode,
+            "std": std,
+            "q16": q16,
+            "q84": q84,
+            "execution_time": execution_time
+        }
+
+    return stats_dict

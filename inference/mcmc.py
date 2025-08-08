@@ -18,7 +18,7 @@ class MCMC:
     def __init__(
             self, forward_map: Callable, data_x: np.ndarray, data_u: np.ndarray, par_names: str,
             par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 1e-2, 
-            n_iter: int = 100000, burn_in: int = 10000,):
+            n_iter: int = 100000, burn_in: int = 10000, SimData: bool = True):
         """
         Initialize the MCMC inference class.
 
@@ -43,7 +43,9 @@ class MCMC:
         n_iter : int
             Total number of MCMC iterations.
         burn_in : int
-            Number of burn-in iterations.   
+            Number of burn-in iterations.
+        SimData : bool
+            Whether to simulate data or use provided data.
         """
         self.forward_map = forward_map
         self.data_x      = data_x
@@ -55,6 +57,7 @@ class MCMC:
         self.sigma       = sigma
         self.n_iter      = n_iter
         self.burn_in     = burn_in
+        self.SimData     = SimData
 
     def run_mcmc(self):
         """
@@ -73,8 +76,9 @@ class MCMC:
             simdata    = lambda n, loc, scale: stats.norm.rvs(size = n[0], loc = loc, scale = scale)
         )
 
-        #self.buq.SimData(x = np.array([self.par_true]))
-        
+        if self.SimData:
+            self.buq.SimData(x = np.array([self.par_true]))
+
         start_time = time.time()
         self.buq.RunMCMC(T = self.n_iter, burn_in = self.burn_in)
         self.execution_time = time.time() - start_time
@@ -106,7 +110,7 @@ class MCMC:
 def MCMCInference(
     filename: str, forward_map: Callable, data_x: np.ndarray, data_u: np.ndarray, par_names: str,
     par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 1e-2, n_iter: int = 100000,
-    burn_in: int = 10000,
+    burn_in: int = 10000, SimData: bool = True
 ):
     """
     Run MCMC inference or load samples from file if available.
@@ -157,6 +161,7 @@ def MCMCInference(
             sigma       = sigma,
             n_iter      = n_iter,
             burn_in     = burn_in,
+            SimData     = SimData
         )
         twalk.run_mcmc()
         twalk.save_samples_to_csv(filename = filename)

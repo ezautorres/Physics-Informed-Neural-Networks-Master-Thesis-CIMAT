@@ -38,7 +38,7 @@ import numpy as np                    # NumPy for numerical operations.
 import os, sys                        # OS and sys modules for file path operations.
 import torch                          # PyTorch library for tensor operations.
 import matplotlib.pyplot as plt       # Matplotlib for plotting.
-from typing import Callable, Optional # Type hinting for callable functions and optional parameters.
+from typing import Callable, Optional, Sequence, Union # Type hinting for callable functions and optional parameters.
 
 def plot_loss(
         model_instance: Callable, filename: str = None, ax: Optional[plt.Axes] = None,
@@ -509,55 +509,453 @@ def plot_comparison_contour_circle(
         plt.show()
 
 def plot_joint_posteriors(
-        samples1: np.ndarray, samples2: np.ndarray = None, par_true: float = None, par_names: str = None,
-        bins: int = 30, ax: Optional[plt.Axes] = None, filename: str = None
+        samples1: np.ndarray,
+        samples2: np.ndarray = None,
+        par_true: Union[float, Sequence[float], None] = None,
+        par_names: Union[str, Sequence[str], None] = None,
+        bins: int = 30,
+        ax: Optional[plt.Axes] = None,
+        filename: str = None,
+        param_idx: Optional[int] = None,
     ):
     """
-    Plot two posterior histograms (e.g., from MCMC samples) on the same axes.
+    Plot posterior histogram(s) for one parameter from possibly multi-parameter samples.
+
+    If `samples1`/`samples2` are 2D (shape (N, P)), you must specify `param_idx` to
+    choose which parameter column to plot. If they are 1D, `param_idx` is ignored.
 
     Parameters
     ----------
     samples1 : np.ndarray
-        MCMC samples from the first posterior.
-    samples2 : np.ndarray
-        MCMC samples from the second posterior.
-    par_true : float, optional
-        Ground truth value to mark with a vertical line.
-    par_names : str, optional
-        Name of the parameter being inferred, used for labeling.
+        MCMC samples from the first posterior. Shape (N,) or (N, P).
+    samples2 : np.ndarray, optional
+        MCMC samples from the second posterior. Shape (N,) or (N, P).
+    par_true : float or Sequence[float], optional
+        Ground-truth value(s). If a sequence is provided and `param_idx` is set, the
+        `param_idx`-th value is used.
+    par_names : str or Sequence[str], optional
+        Parameter name(s). If a sequence is provided and `param_idx` is set, the
+        `param_idx`-th name is used for labeling.
     bins : int
         Number of bins in the histogram.
     ax : matplotlib.axes.Axes, optional
-        Existing matplotlib axis to draw the histograms on. If None, a new figure will be created.
+        Existing matplotlib axis to draw on. If None, a new figure will be created.
     filename : str, optional
-        Path to save the figure (as .pdf).
+        Path to save the figure (as .pdf/.png).
+    param_idx : int, optional
+        Column index of the parameter to plot when samples are 2D.
     """
-    # Create a new figure and axis if not provided.
+
+    def _select_1d(a: np.ndarray, which: str) -> np.ndarray:
+        a = np.asarray(a)
+        if a.ndim == 1:
+            return a
+        if a.ndim == 2:
+            if param_idx is None:
+                raise ValueError(f"{which} has shape {a.shape}; provide param_idx to choose which parameter to plot.")
+            return a[:, param_idx]
+        raise ValueError(f"{which} must be 1D or 2D; got shape {a.shape}.")
+
+    # Extract 1D series to plot
+    s1 = _select_1d(samples1, "samples1")
+    s2 = _select_1d(samples2, "samples2") if samples2 is not None else None
+
+    # Resolve true value for the selected parameter
+    true_val = None
+    if par_true is not None:
+        if isinstance(par_true, (list, tuple, np.ndarray)):
+            if param_idx is None and np.ndim(par_true) != 0 and (s1.ndim == 1):
+                # If user passed a sequence but no param_idx for 1D data, pick first
+                true_val = float(np.asarray(par_true).ravel()[0])
+            else:
+                par_true_arr = np.asarray(par_true).ravel()
+                if param_idx is None:
+                    # samples were 1D, try to take first
+                    true_val = float(par_true_arr[0])
+                else:
+                    if param_idx >= par_true_arr.size:
+                        raise ValueError(f"par_true has size {par_true_arr.size} but param_idx={param_idx} requested.")
+                    true_val = float(par_true_arr[param_idx])
+        else:
+            true_val = float(par_true)
+
+    # Resolve parameter name
+    xlabel = None
+    if par_names is not None:
+        if isinstance(par_names, (list, tuple)):
+            if param_idx is None:
+                xlabel = str(par_names[0])
+            else:
+                if param_idx >= len(par_names):
+                    raise ValueError(f"par_names has length {len(par_names)} but param_idx={param_idx} requested.")
+                xlabel = str(par_names[param_idx])
+        else:
+            xlabel = str(par_names)
+
+    # Create axis if needed
     created_figure = False
     if ax is None:
-        fig, ax = plt.subplots(figsize = (10,6))
+        fig, ax = plt.subplots(figsize=(10, 6))
         created_figure = True
-    
-    ax.hist(samples1.flatten(), bins = bins, alpha = 0.8, label = "Analytical solution",
-            color = '#1f77b4', edgecolor = '#1f77b4', density = True)
-    if samples2 is not None:
-        ax.hist(samples2.flatten(), bins = bins, alpha = 0.7, label = "PINN solution",
-                color = '#ff7f0e', edgecolor = '#ff7f0e', density = True)
 
-    if par_true is not None:
-        ax.axvline(x = par_true, color = "red", linestyle = "-", linewidth = 3,
-                   label = fr"True {par_names} = {par_true}")
+    # Plot histograms
+    ax.hist(s1, bins=bins, alpha=0.8, label="Analytical solution",
+            color='#1f77b4', edgecolor='#1f77b4', density=True)
+    if s2 is not None:
+        ax.hist(s2, bins=bins, alpha=0.7, label="PINN solution",
+                color='#ff7f0e', edgecolor='#ff7f0e', density=True)
 
-    ax.legend(fontsize = 14)
-    if par_names:
-        ax.set_xlabel(par_names, fontsize = 14)
-    ax.set_ylabel("density", fontsize = 14)
-    ax.tick_params(axis = 'both', labelsize = 12)
+    # True value line
+    if true_val is not None:
+        label_str = f"True {xlabel}" if xlabel else "True value"
+        ax.axvline(x=true_val, color="red", linestyle="-", linewidth=3,
+                   label=fr"{label_str} = {true_val:.2f}")
+
+    # Labels & styling
+    ax.legend(fontsize=14)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=14)
+    ax.set_ylabel("density", fontsize=14)
+    ax.tick_params(axis='both', labelsize=12)
     ax.grid(True)
     plt.tight_layout()
 
+    # Save/show
     if filename:
         path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), filename)
-        plt.savefig(path, bbox_inches = 'tight', pad_inches = 0.4, dpi = 500)
+        plt.savefig(path, bbox_inches='tight', pad_inches=0.4, dpi=500)
     if created_figure:
         plt.show()
+
+def plot_trajectory_2d(
+    samples: Union[np.ndarray, dict],
+    par_names: Sequence[str] = (r"$\alpha$", r"$\beta$"),
+    par_true: Optional[Sequence[float]] = None,
+    color: str = "tab:blue",
+    label: str = "Chain",
+    arrows_every: int = 60,
+    start_idx: int = 0,
+    end_idx: Optional[int] = None,
+    stride: int = 1,
+    show_mean: bool = True,
+    ax: Optional[plt.Axes] = None,
+    filename: Optional[str] = None,
+):
+    """
+    Traza la trayectoria MCMC en 2D (param 0 vs param 1) con flechas, inicio/fin, media y punto verdadero.
+
+    Parameters
+    ----------
+    samples : (N,2) array o dict con key 'samples'
+        Muestras MCMC. Si es (N,P), se toma P>=2 y se usan las dos primeras columnas.
+    par_names : (2,) sequence of str
+        Nombres a poner en ejes (por defecto alfa y beta).
+    par_true : (2,) sequence of float, optional
+        Punto verdadero para marcar con 'x'.
+    color : str
+        Color base de la trayectoria.
+    label : str
+        Etiqueta para leyenda.
+    arrows_every : int
+        Cada cuántos pasos poner una flecha (quiver) indicando dirección temporal.
+    start_idx : int
+        Índice de inicio (para saltar burn-in, por ejemplo).
+    end_idx : int or None
+        Índice final exclusivo. None => hasta el final.
+    stride : int
+        Submuestreo de la cadena (cada 'stride' puntos).
+    show_mean : bool
+        Si True, marca el promedio posterior con un punto grande.
+    ax : matplotlib.axes.Axes, optional
+        Ejes donde dibujar. Si None, crea una figura nueva.
+    filename : str, optional
+        Si se da, guarda la figura en esa ruta.
+    """
+    # Obtener array (N, P)
+    if isinstance(samples, dict):
+        samples = samples.get("samples", samples)
+    S = np.asarray(samples)
+    if S.ndim == 1:
+        S = S.reshape(-1, 1)
+    if S.shape[0] < S.shape[1]:
+        S = S.T
+
+    if S.shape[1] < 2:
+        raise ValueError("Se requieren al menos 2 parámetros para una trayectoria 2D.")
+
+    # Recorte y stride
+    N = S.shape[0]
+    if end_idx is None:
+        end_idx = N
+    sl = slice(start_idx, end_idx, stride)
+    C = S[sl, :2]  # solo 2 primeros parámetros
+    x = C[:, 0]
+    y = C[:, 1]
+
+    created = False
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 8))
+        created = True
+
+    # Línea principal
+    ax.plot(x, y, lw=0.8, alpha=0.7, color=color, label=f"{label} (path)")
+
+    # Flechitas cada 'arrows_every'
+    if len(x) > 1 and arrows_every > 0:
+        step = max(1, int(arrows_every))
+        ax.quiver(
+            x[:-1:step], y[:-1:step],
+            np.diff(x)[::step], np.diff(y)[::step],
+            angles="xy", scale_units="xy", scale=1,
+            width=0.002, color=color, alpha=0.6,
+        )
+
+    # Inicio / Fin
+    ax.scatter(x[-1], y[-1], marker='*', s=150, color=color, edgecolor='k', zorder=6, label=f"{label} end")
+
+    # Media posterior
+    if show_mean:
+        m = C.mean(axis=0)
+        ax.scatter(m[0], m[1], color=color, s=110, zorder=7, label=f"{label} mean")
+
+    # Punto verdadero
+    if par_true is not None:
+        ax.plot(par_true[0], par_true[1], marker='x', ms=10, mew=2, color='red', label='True', zorder=10)
+
+    ax.set_xlabel(par_names[0])
+    ax.set_ylabel(par_names[1])
+    ax.set_title("MCMC trajectory in parameter space")
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="best")
+    plt.tight_layout()
+
+    if filename:
+        plt.savefig(filename, bbox_inches="tight", dpi=500)
+
+    if created:
+        plt.show()
+
+def plot_corner_comparison(
+    samples_analytical: Union[np.ndarray, dict],
+    samples_pinn: Union[np.ndarray, dict, None] = None,
+    par_names: Sequence[str] | None = None,
+    par_true: Sequence[float] | None = None,
+    bins: int = 40,
+    filename: str | None = None,
+    show_upper: bool = False,
+    # styling knobs
+    s: float = 6.0,
+):
+    """
+    Corner-like comparison (P>=2). Diagonal: histograms overlaid. Off-diagonal: joint scatter.
+    - If show_upper=False (default), the upper-right triangle is hidden.
+    - Use scatter_alpha_* and hist_alpha_* to tune transparency.
+    """
+    def _to_2d(arr):
+        if isinstance(arr, dict):
+            arr = arr.get("samples", arr)
+        arr = np.asarray(arr)
+        if arr.ndim == 1:
+            arr = arr.reshape(-1, 1)
+        if arr.shape[0] < arr.shape[1]:
+            arr = arr.T
+        return arr
+
+    A = _to_2d(samples_analytical)
+    P = A.shape[1]
+    if P < 2:
+        raise ValueError("plot_corner_comparison requiere al menos 2 parámetros.")
+
+    has_pinn = samples_pinn is not None
+    B = _to_2d(samples_pinn) if has_pinn else None
+    if has_pinn and B.shape[1] != P:
+        raise ValueError(f"samples_pinn tiene {B.shape[1]} params; se esperaban {P}.")
+
+    if par_names is None or len(par_names) != P:
+        par_names = [f"par{i}" for i in range(P)]
+
+    if par_true is None:
+        par_true = [None] * P
+    else:
+        par_true = list(par_true)
+        if len(par_true) != P:
+            raise ValueError(f"par_true tiene longitud {len(par_true)}; se esperaba {P}.")
+
+    fig, axes = plt.subplots(P, P, figsize=(3.2 * P, 2.6 * P))
+
+    for i in range(P):
+        for j in range(P):
+            ax = axes[i, j]
+
+            # Oculta el triángulo superior (redundante)
+            if (not show_upper) and (i < j):
+                ax.axis('off')
+                continue
+
+            if i == j:
+                # Diagonal: histogramas marginales
+                ax.hist(A[:, j], bins=bins, density=True, alpha=0.8,
+                        color="#1f77b4", label="Analytical")
+                if has_pinn:
+                    ax.hist(B[:, j], bins=bins, density=True, alpha=0.7,
+                            color="#ff7f0e", label="PINN")
+                if par_true[j] is not None:
+                    ax.axvline(par_true[j], color="red", lw=2, ls="--")
+                ax.set_ylabel("density", fontsize=12)
+                ax.set_xlabel(par_names[j], fontsize=12)
+            else:
+                # Off-diagonal: dispersión conjunta
+                ax.scatter(A[:, j], A[:, i], s=s, alpha=0.01, color="#1f77b4")
+                if has_pinn:
+                    ax.scatter(B[:, j], B[:, i], s=s, alpha=0.01, color="#ff7f0e")
+                if par_true[j] is not None and par_true[i] is not None:
+                    ax.plot(par_true[j], par_true[i], marker="x", color="red", ms=8, mew=2)
+                if i == P - 1:
+                    ax.set_xlabel(par_names[j], fontsize=12)
+                if j == 0:
+                    ax.set_ylabel(par_names[i], fontsize=12)
+            ax.grid(True, alpha=0.3)
+
+    handles = [plt.Line2D([0], [0], color="#1f77b4", lw=6, alpha=0.8)]
+    labels = ["Analytical"]
+    if has_pinn:
+        handles.append(plt.Line2D([0], [0], color="#ff7f0e", lw=6, alpha=0.7))
+        labels.append("PINN")
+    fig.legend(handles, labels, loc="upper right", fontsize = 12)
+
+    fig.tight_layout()
+    if filename:
+        plt.savefig(filename, bbox_inches="tight", dpi=500)
+    plt.show()
+
+
+    # ============================================================
+# Scatter-style trace plots per-parameter (iteration vs value)
+# ============================================================
+def plot_trace_scatter(
+    samples_analytical: Union[np.ndarray, dict],
+    samples_pinn: Union[np.ndarray, dict, None] = None,
+    par_names: Sequence[str] | None = None,
+    par_true: Sequence[float] | None = None,
+    burn_in: int = 0,
+    max_points: int = 20000,
+    s: float = 6.0,
+    alpha: float = 0.25,
+    add_running_mean: bool = True,
+    running_mean_window: int = 200,
+    filename: str | None = None,
+):
+    """
+    Scatter-style trace plots: iteration index on x-axis, parameter value on y-axis.
+
+    Parameters
+    ----------
+    samples_analytical : array-like or dict
+        MCMC samples for the analytical forward model. Shape (N, P) or dict with key 'samples'.
+    samples_pinn : array-like or dict or None
+        Optional MCMC samples for the PINN model. Same shape rules as above.
+    par_names : sequence of str, optional
+        Names of the parameters (length P). If None, uses ['par0', ...].
+    par_true : sequence of float, optional
+        True values per-parameter to draw horizontal lines. If None, omitted.
+    burn_in : int, default 0
+        Burn-in iterations to shade on the plots.
+    max_points : int, default 20000
+        If a chain has more than this many iterations, downsample indices to this cap for speed/clarity.
+    s : float, default 6.0
+        Marker size for scatter points.
+    alpha : float, default 0.25
+        Alpha (transparency) for scatter points.
+    add_running_mean : bool, default True
+        If True, overlay a simple running mean to show drift/stationarity.
+    running_mean_window : int, default 200
+        Window size for running mean (moving average).
+    filename : str, optional
+        If provided, save the figure to this path.
+    """
+    import numpy as _np
+    import matplotlib.pyplot as _plt
+
+    def _to_2d(arr):
+        if isinstance(arr, dict):
+            arr = arr.get("samples", arr)
+        arr = _np.asarray(arr)
+        if arr.ndim == 1:
+            arr = arr.reshape(-1, 1)
+        if arr.shape[0] < arr.shape[1]:
+            arr = arr.T
+        return arr
+
+    def _downsample_indices(N: int, cap: int) -> _np.ndarray:
+        if N <= cap:
+            return _np.arange(N)
+        # uniform stride to reach approximately 'cap' points
+        step = max(1, int(_np.floor(N / cap)))
+        idx = _np.arange(0, N, step)
+        if idx[-1] != N - 1:
+            idx = _np.append(idx, N - 1)
+        return idx
+
+    def _running_mean(x: _np.ndarray, w: int) -> _np.ndarray:
+        if w <= 1:
+            return x
+        c = _np.cumsum(_np.insert(x, 0, 0.0))
+        out = (c[w:] - c[:-w]) / float(w)
+        # pad to length N by repeating edges
+        pad_left = _np.full(w // 2, out[0])
+        pad_right = _np.full(x.size - out.size - pad_left.size, out[-1])
+        return _np.concatenate([pad_left, out, pad_right])
+
+    A = _to_2d(samples_analytical)
+    P = A.shape[1]
+
+    has_pinn = samples_pinn is not None
+    B = _to_2d(samples_pinn) if has_pinn else None
+    if has_pinn and B.shape[1] != P:
+        raise ValueError(f"samples_pinn has {B.shape[1]} parameters, expected {P}.")
+
+    if par_names is None or len(par_names) != P:
+        par_names = [f"par{i}" for i in range(P)]
+
+    if par_true is None:
+        par_true = [None] * P
+    else:
+        par_true = list(par_true)
+        if len(par_true) != P:
+            raise ValueError(f"par_true has length {len(par_true)}, expected {P}.")
+
+    ncols = 2 if has_pinn else 1
+    fig, axes = _plt.subplots(nrows=P, ncols=ncols, figsize=(6 * ncols, 2.8 * P), sharex=False)
+    if P == 1:
+        axes = _np.atleast_2d(axes)
+    if ncols == 1:
+        axes = _np.column_stack([axes])
+
+    titles = ["Analytical", "PINN"] if has_pinn else ["Analytical"]
+
+    for j in range(P):
+        for k in range(ncols):
+            arr = A if k == 0 else B
+            ax = axes[j, k]
+            N = arr.shape[0]
+            idx = _downsample_indices(N, max_points)
+            ax.scatter(idx, arr[idx, j], s=s, alpha=alpha, color=("#1f77b4" if k == 0 else "#ff7f0e"))
+            if burn_in > 0:
+                ax.axvspan(0, burn_in, color="0.9", alpha=0.6)
+            if par_true[j] is not None:
+                ax.axhline(par_true[j], color="red", lw=2, ls="--")
+            if add_running_mean:
+                rm = _running_mean(arr[:, j], running_mean_window)
+                ax.plot(_np.arange(N), rm, lw=1.2, color=("#0d3b66" if k == 0 else "#b15928"), alpha=0.9)
+            if j == 0:
+                ax.set_title(titles[k])
+            if k == 0:
+                ax.set_ylabel(par_names[j])
+            if j == P - 1:
+                ax.set_xlabel("iteration")
+            ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+    if filename:
+        _plt.savefig(filename, bbox_inches="tight", dpi=300)
+    _plt.show()
