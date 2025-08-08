@@ -44,9 +44,11 @@ References
 - https://docs.scipy.org/doc/scipy/reference/stats.qmc.html
 """
 # Necessary libraries.
-import torch                   # PyTorch library for tensor operations.
-from scipy.stats import qmc    # Quasi-Monte Carlo sampling methods from SciPy.
-from typing import Tuple, List # Type hinting for tuples and lists.
+import numpy as np                 # Numpy library for numerical operations.
+import torch                       # PyTorch library for tensor operations.
+from typing import Tuple, Optional # Type hinting for tuples and optional parameters.
+from scipy.stats import qmc        # Quasi-Monte Carlo sampling methods from SciPy.
+from typing import Tuple, List     # Type hinting for tuples and lists.
 
 def sample_square_uniform(
         dim1_min: float, dim1_max: float, dim2_min: float, dim2_max: float, interiorSize: int,
@@ -403,3 +405,69 @@ def generate_square_grid_points(
         X_total = torch.cat((X_total, params), dim=1)
 
     return X_total.requires_grad_(train).to(device)
+
+def generate_synthetic_data(
+        dim1_min: float, dim1_max: float, dim2_min: float, dim2_max: float, n_points: int, 
+        pinn_instance: object, fixed_params: Optional[Tuple[float, ...]] = None,
+        par_true: Optional[Tuple[float, ...]] = None, sigma: float = 1e-2
+        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Generates synthetic data for PINN inference, supporting any number of fixed parameters and true
+    parameters to be appended to the input.
+
+    Parameters
+    ----------
+    dim1_min : float
+        Minimum value for the first sampled dimension (e.g., x).
+    dim1_max : float
+        Maximum value for the first sampled dimension.
+    dim2_min : float
+        Minimum value for the second sampled dimension (e.g., t).
+    dim2_max : float
+        Maximum value for the second sampled dimension.
+    n_points : int
+        Number of random data points to generate.
+    pinn_instance : object
+        Model instance with an `.analytical_solution(torch.Tensor)` method.
+    fixed_params : tuple of float, optional
+        Fixed parameters to append after (dim1, dim2). Repeated for all points.
+    par_true : tuple of float, optional
+        True parameter values to append after the fixed parameters. Repeated for all points.
+    sigma : float, optional
+        Standard deviation of the Gaussian noise added to the analytical solution.
+
+    Returns
+    -------
+    data_x : np.ndarray
+        Input locations for the data (without par_true), shape (n_points, D).
+    data_u_exact : np.ndarray
+        Exact solution values without noise, shape (n_points,).
+    data_u : np.ndarray
+        Solution values with Gaussian noise, shape (n_points,).
+    """
+    dim1 = np.random.uniform(dim1_min, dim1_max, n_points) # Randomly sample dim1 values.
+    dim2 = np.random.uniform(dim2_min, dim2_max, n_points) # Randomly sample dim2 values.
+    data_x_parts = [dim1, dim2]                            # Start with the sampled dimensions.
+
+    # Add fixed parameters (if any).
+    if fixed_params is not None:
+        for p in fixed_params:
+            data_x_parts.append(np.full_like(dim1, p, dtype = np.float32))
+
+    # Stack to create base input for data (without par_true)
+    data_x = np.column_stack(data_x_parts)
+
+    # Create the input for the analytical solution (add par_true if any).
+    X_parts = [dim1, dim2]
+    if fixed_params is not None:
+        for p in fixed_params:
+            X_parts.append(np.full_like(dim1, p, dtype = np.float32))
+    if par_true is not None:
+        for p in par_true:
+            X_parts.append(np.full_like(dim1, p, dtype = np.float32))
+
+    X = torch.tensor(np.column_stack(X_parts), dtype = torch.float32)                      # Stack to create the full input for the analytical solution.
+    data_u_exact = pinn_instance.analytical_solution(X).detach().cpu().numpy().reshape(-1) # Compute exact solution.
+    data_u = data_u_exact + np.random.normal(0, sigma, size=data_u_exact.shape)            # Add Gaussian noise.
+
+    return data_x, data_u_exact, data_u

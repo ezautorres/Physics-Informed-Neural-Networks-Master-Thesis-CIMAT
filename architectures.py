@@ -77,10 +77,12 @@ class MLP(nn.Module):
         for hidden_sz in self.hidden_lys:
             linear = nn.Linear(prev_size, hidden_sz)                                      # Linear layer.
             nn.init.xavier_uniform_(linear.weight, gain = nn.init.calculate_gain("tanh")) # Initialize the weights of the linear layer using Xavier uniform initialization with Tanh gain. 
+            #nn.init.xavier_uniform_(linear.weight, gain=1.0)
             nn.init.zeros_(linear.bias)                                                   # Initialize the bias of the linear layer to zero.
             layers.append(linear)                                                         # Append the linear layer to the list of layers.
             layers.append(nn.LayerNorm(hidden_sz))                                        # Layer normalization for the hidden layer.
             layers.append(nn.Tanh())                                                      # Tanh activation function for the hidden layer.
+            #layers.append(Sin())
             layers.append(nn.Dropout(0.0))                                                # Dropout layer with a dropout rate of 0.0 to prevent overfitting.
             prev_size = hidden_sz
         output_layer = nn.Linear(prev_size, self.outputSize) # Output layer.
@@ -104,6 +106,10 @@ class MLP(nn.Module):
             Output tensor of shape (batch_size, outputSize).
         """
         return self.net(x)
+    
+class Sin(nn.Module):
+    def forward(self, x):
+        return torch.sin(x)
 
 class CNNPINN(nn.Module):
     def __init__(self, input_channels=4, conv_channels=[32, 64, 128], kernel_size=3,

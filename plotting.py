@@ -82,7 +82,8 @@ def plot_loss(
 
     epochs = list(range(1, len(loss_history) + 1))
     ax.plot(epochs, loss_history, label = 'Training loss', color = '#00629B', linewidth = 3)
-    ax.plot(epochs, val_loss_history, label = 'Validation loss', color = '#E87722', linewidth = 3)
+    if val_loss_history is not None:
+        ax.plot(epochs, val_loss_history, label = 'Validation loss', color = '#E87722', linewidth = 3)
 
     if best_epoch and complete_training:
         ax.axvline(best_epoch, linestyle = "--", color = '#75787B', alpha = 0.7, label = f"Best Epoch: {best_epoch}", linewidth = 3)
@@ -293,7 +294,7 @@ def plot_solution_circle(
 def plot_comparison_contour_square(
         model_instance: Callable, domain_kwargs: dict, parameters: list = None,
         filename: str = None, levels: int = 20, ax: Optional[plt.Axes] = None,
-        time_dependent: bool = False) -> None:
+        time_dependent: bool = False, fix: bool = False) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical solution, and their absolute
     error over a square domain. This function evaluates both the trained PINN model and the reference
@@ -508,7 +509,7 @@ def plot_comparison_contour_circle(
         plt.show()
 
 def plot_joint_posteriors(
-        samples1: np.ndarray, samples2: np.ndarray, par_true: float = None, par_names: str = None,
+        samples1: np.ndarray, samples2: np.ndarray = None, par_true: float = None, par_names: str = None,
         bins: int = 30, ax: Optional[plt.Axes] = None, filename: str = None
     ):
     """
@@ -539,8 +540,9 @@ def plot_joint_posteriors(
     
     ax.hist(samples1.flatten(), bins = bins, alpha = 0.8, label = "Analytical solution",
             color = '#1f77b4', edgecolor = '#1f77b4', density = True)
-    ax.hist(samples2.flatten(), bins = bins, alpha = 0.7, label = "PINN solution",
-            color = '#ff7f0e', edgecolor = '#ff7f0e', density = True)
+    if samples2 is not None:
+        ax.hist(samples2.flatten(), bins = bins, alpha = 0.7, label = "PINN solution",
+                color = '#ff7f0e', edgecolor = '#ff7f0e', density = True)
 
     if par_true is not None:
         ax.axvline(x = par_true, color = "red", linestyle = "-", linewidth = 3,

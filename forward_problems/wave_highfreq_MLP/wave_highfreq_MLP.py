@@ -1,44 +1,44 @@
+
 """
-poisson_pinn.py
----------------
-Instance of a Physics-Informed Neural Network (PINN) applied to the Poisson Equation in 2D.
+wave_highfreq_MLP.py
+-------------------------------
+Instance of a Physics-Informed Neural Network (PINN) applied to a linear wave equation with high-frequency
+components.
 
 Author: Ezau Faridh Torres Torres.
-Date: 21 January 2025.
+Date: 6 August 2025.
 Institution: Centro de Investigación en Matemáticas (CIMAT).
 
 Description
 -----------
-This script solves the Poisson equation using a Physics-Informed Neural Network (PINN). The Poisson
-equation is defined in the unit square domain [0,1]x[0,1] with homogeneous Dirichlet boundary conditions.
+This script solves a linear wave equation using a Physics-Informed Neural Network (PINN).
+The problem is defined on the spatio-temporal domain [x,t] ∈ [0,1] × [0,1], subject to
+Dirichlet boundary conditions and an initial condition.
 
 The PDE to be solved is:
-    $\Delta u = -2\pi^2 \sin(\pi x) sin(\pi y),  for $(x,y) \in (0,1)x(0,1)$.
+    ∂²u/∂t² - 100 ∂²u/∂x² = 0.
 
-Subject to boundary conditions:
-    $u(x,0) = 0$,   $u(x,1) = 0$,  
-    $u(0,y) = 0$,   $u(1,y) = 0$
+Subject to:
+    - Initial condition: u(x,0) = sin(πx) + sin(2πx), ∂u/∂t(x,0) = 0.
+    - Boundary conditions: u(0,t) = u(1,t) = 0.
 
 The exact analytical solution is:
-    $u(x,y) = sin(\pi x) sin(\pi y)$
+    u(x,t) = sin(πx) cos(10πt) + sin(2πx) cos(20πt).
 
 This implementation includes:
-    - A custom class 'PoissonPinn' inheriting from a general PINN base class.
-    - The definition of the physical loss term and boundary condition loss.
-    - Training and visualization routines.
+    - A custom class 'WaveHighFreqPinn' inheriting from a general PINN base class.
+    - The definition of the PDE residual, initial and boundary loss terms.
+    - Training, model saving, and visual comparison with the analytical solution.
 
 Usage
 -----
-Run the script directly to:
-    - Instantiate and train the PINN for the Poisson problem.
-    - Save and load checkpoints.
-    - Visualize the loss, solution, and comparison with the analytical solution.
+Run the script directly. It will train the PINN and generate plots for loss convergence and solution comparison.
 """
 import numpy as np                                                                   # Numpy library.
 import torch                                                                         # Import PyTorch
 from typing import Callable                                                          # Type hinting.
 import sys, os                                                                       # Import sys and os modules.
-import random                                                                        # Random library.
+import random                                                                        # Random module for reproducibility.
 np.set_printoptions(precision = 17, suppress = False)                                # Set print options for numpy.
 np.random.seed(0)                                                                    # Seed for reproducibility.
 random.seed(0)                                                                       # Seed for reproducibility.
@@ -50,87 +50,78 @@ from pinn_base import PinnBase                                                  
 from plotting import plot_loss, plot_solution_square, plot_comparison_contour_square # Plotting functions.
 from utils import get_model_info                                                     # Utility function to get model information.
 
-class PoissonPinn(PinnBase):
+
+class WaveHighFreqPinn(PinnBase):
     def __init__(self, **params):
-        """
-        Initializes the PoissonPinn instance using the configuration dictionary passed to the base class.
-        
-        Parameters
-        ----------
-        **params : dict
-            Dictionary of arguments required by the PinnBase class, including model configuration,
-            optimizer settings, and domain sampling specifications.
-        """
-        super(PoissonPinn, self).__init__(**params) # Initialize the PINN with parameters from the base class.
+        super(WaveHighFreqPinn, self).__init__(**params)
+        self.c = 10.0  # Wave speed.
 
     def analytical_solution(self, X: torch.Tensor) -> torch.Tensor:
-        """
-        Returns the analytical solution u(x,y) = sin(\pi x) sin(\pi y) evaluated at input points X.
-
-        Parameters
-        ----------
-        X : torch.Tensor
-            Tensor of shape (N, 2), where each row corresponds to a 2D point (x,y) in the domain.
-
-        Returns
-        -------
-        torch.Tensor
-            Tensor of shape (N,) containing the analytical solution evaluated at each input point.
-        """
-        return torch.sin(torch.pi * X[:,0]) * torch.sin(torch.pi * X[:,1])
+        x = X[:,0]
+        t = X[:,1]
+        return torch.sin(np.pi * x) * torch.cos(self.c * np.pi * t) + torch.sin(2 * np.pi * x) * torch.cos(2 * self.c * np.pi * t)
 
     def loss_PINN(self, net: Callable, X: torch.Tensor) -> torch.Tensor:
         """
-        Computes the total PINN loss as a weighted sum of the interior PDE residual loss and the boundary
-        condition loss.
+        Computes the total PINN loss using a fully vectorized implementation.
 
         Parameters
         ----------
         net : Callable
-            Neural network model approximating the solution $\boldsymbol{\hat{u}}_{w}(x,y)$.
+            Neural network model approximating the solution $\boldsymbol{\hat{u}}_{w}(x,t)$.
         X : torch.Tensor
-            Tensor of input points, where the first N_pde entries correspond to interior domain points
-            and the rest to boundary points.
+            Input tensor of shape (N_total, 2), containing collocation, boundary, and initial points.
 
         Returns
         -------
         torch.Tensor
-            Scalar tensor representing the total training loss for the current batch.
-
-        Notes
-        -----
-        In this example, initial and additional conditions are not used, so the loss is computed only
-        from the PDE residual and boundary conditions.
+            Scalar tensor representing the total training loss.
         """
         # Define the weights for the different loss components.
-        lb_pde = 1.0 # λ_pde
-        lb_bc  = 1.0 # λ_bc
+        lb_pde = 5 # λ_pde.
+        lb_ic  = 1 # λ_ic.
+        lb_bc  = 1 # λ_bc.
 
         # Extract the number of points for each region from the domain_kwargs.
-        N_pde = self.domain_kwargs["interiorSize"] # Number of interior points for the PDE.
-        
+        N_pde   = self.domain_kwargs["interiorSize"] # Number of PDE collocation points.
+        N_bc_l  = self.domain_kwargs["dim1_minSize"] # Number of left boundary points.
+        N_bc_r  = self.domain_kwargs["dim1_maxSize"] # Number of right boundary points.
+        N_ic    = self.domain_kwargs["dim2_minSize"] # Number of initial condition points.
+
         # Split the input tensor X into the different regions.
-        X_pde = X[0:N_pde] # Points in the interior for the PDE.
-        X_bc  = X[N_pde:]  # Points for the boundary conditions.
+        X_pde = X[0:N_pde]                          # PDE collocation points.
+        X_bcl = X[N_pde:N_pde+N_bc_l]               # Left boundary points.
+        X_bcr = X[N_pde+N_bc_l:N_pde+N_bc_l+N_bc_r] # Right boundary points.
+        X_ic  = X[-N_ic:]                           # Initial condition points.
 
         # -----------------------------------------------------------------------------------------------
-        # PDE loss: N[u] = f => 𝚫u = -2π²sin(πx)sin(πy).
+        # PDE loss: N[u] = f => u_tt - c² u_xx = 0.
         # -----------------------------------------------------------------------------------------------
         u_pde = net(X_pde)                                                                                        # Compute the model output for the PDE points.
         grad_u = torch.autograd.grad(u_pde, X_pde, grad_outputs = torch.ones_like(u_pde), create_graph = True)[0] # ∇u, grad_u[:,0] = ∂u/∂x, grad_u[:,1] = ∂u/∂y.
-        u_x, u_y = grad_u[:,0], grad_u[:,1]                                                                       # ∂u/∂x, ∂u/∂y.
+        u_x, u_t = grad_u[:,0], grad_u[:,1]                                                                       # ∂u/∂x, ∂u/∂t
         u_xx = torch.autograd.grad(u_x, X_pde, grad_outputs = torch.ones_like(u_x), create_graph = True)[0][:,0]  # ∂²u/∂x².
-        u_yy = torch.autograd.grad(u_y, X_pde, grad_outputs = torch.ones_like(u_y), create_graph = True)[0][:,1]  # ∂²u/∂y².
-        f = -2 * torch.pi**2 * torch.sin(torch.pi * X_pde[:,0]) * torch.sin(torch.pi * X_pde[:,1])                # Source term: -2π²sin(πx)sin(πy).
-        
-        loss_pde = torch.mean((u_xx + u_yy - f)**2) # Compute the PDE residual loss.
+        u_tt = torch.autograd.grad(u_t, X_pde, grad_outputs = torch.ones_like(u_t), create_graph = True)[0][:,1]  # ∂²u/∂t².
+
+        loss_pde = torch.mean((u_tt - self.c**2 * u_xx)**2) # Compute the PDE residual loss.
 
         # -----------------------------------------------------------------------------------------------
-        # Boundary condition loss: B[u] = g => u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+        # Boundary condition loss: B[u] = g => u(0,t) = 0, u(1,t) = 0.
         # -----------------------------------------------------------------------------------------------
-        loss_bc = torch.mean(net(X_bc)**2) # Compute the boundary condition loss.
+        loss_bc = torch.mean(net(X_bcl)**2) + torch.mean(net(X_bcr)**2)
 
-        return lb_pde * loss_pde + lb_bc * loss_bc
+        # -----------------------------------------------------------------------------------------------
+        # Initial condition loss: u0(x) = sin(pi x) + sin(2pi x), ∂u/∂t(x,0) = 0.
+        # -----------------------------------------------------------------------------------------------
+        u_ic = net(X_ic)                                                                                        # Compute the model output for the initial condition points.               
+        grad_ic = torch.autograd.grad(u_ic, X_ic, grad_outputs = torch.ones_like(u_ic), create_graph = True)[0] # ∇u, grad_ic[:,0] = ∂u/∂x, grad_ic[:,1] = ∂u/∂t.
+        u_t_ic = grad_ic[:,1]                                      # ∂u/∂t at initial condition points.
+        x_ic = X_ic[:,0]                                           # Extract x values from initial condition points.
+        u0 = torch.sin(np.pi * x_ic) + torch.sin(2 * np.pi * x_ic) # Initial condition function u0(x).
+
+        loss_ic = torch.mean((u_ic.squeeze() - u0)**2 + u_t_ic**2) # Compute the initial condition loss.
+
+        return lb_pde * loss_pde + lb_ic * loss_ic + lb_bc * loss_bc
 
 # =======================================================================================================
 # Main function.
@@ -150,76 +141,81 @@ if __name__ == "__main__":
         'dim2_min'      : 0.,
         'dim2_max'      : 1.,
         # Collocation points.
-        'interiorSize'  : 500,
-        'dim1_minSize'  : 2000,
-        'dim1_maxSize'  : 2000,
-        'dim2_minSize'  : 2000,
-        'dim2_maxSize'  : 2000,
-        'valSize'       : 2000,
+        'interiorSize'  : 1500,
+        'dim1_minSize'  : 100,
+        'dim1_maxSize'  : 100,
+        'dim2_minSize'  : 500,
+        'dim2_maxSize'  : 0,
+        'valSize'       : 700,
         # Parameters for the PINN.
         'fixed_params'  : None,
         'param_domains' : None,
         # Observed data.
         'data_x'        : None,
-        'data_u'        : None, 
+        'data_u'        : None,
     }
 
     # ---------------------------------------------------------------------------------------------------
     # Architecture and optimizer parameters.
     # ---------------------------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize'  : 2,               # Because we do not have parameters.
-        'hidden_lys' : [100, 100, 100], # Hidden layers of the MLP.
-        'outputSize' : 1                # Output size of the MLP.
+        'inputSize'  : 2,       # Because we do not have parameters.
+        'hidden_lys' : [100]*6, # Hidden layers of the MLP.
+        'outputSize' : 1        # Output size.
     }
-    
+
     optimizer_class = torch.optim.LBFGS
     optimizer_kwargs = {
         'lr'               : 1,             # Learning rate.
-        'max_iter'         : 100,           # Maximum number of iterations.
+        'max_iter'         : 32,            # Maximum number of iterations.
         'tolerance_grad'   : 1e-09,         # Tolerance for the gradient.
         'tolerance_change' : 1e-09,         # Tolerance for the change in the loss.
         'history_size'     : 100,           # History size for the optimizer.
         'line_search_fn'   : "strong_wolfe" # Line search function for the optimizer.
     }
 
-    checkpoint_filename = 'poisson_MLP.pth'
-    poisson_pinn = PoissonPinn(
+    checkpoint_filename = "wave_highfreq_MLP.pth"
+    wave_pinn = WaveHighFreqPinn(
         model_class         = MLP,                   # Model class for the PINN.
         model_kwargs        = model_kwargs,          # Model parameters for the PINN.
         domain_kwargs       = domain_kwargs,         # Domain parameters.
         optimizer_class     = optimizer_class,       # Optimizer class (default is LBFGS).
         optimizer_kwargs    = optimizer_kwargs,      # Optimizer parameters.
-        epochs              = 150,                   # Number of epochs for training.
-        patience            = 10,                    # Patience for early stopping.
+        epochs              = 10000,                 # Number of epochs for training.
+        patience            = 100,                   # Patience for early stopping.
         sampling_fn         = sample_square_uniform, # Sampling function.
         checkpoint_filename = checkpoint_filename,   # Filename for the checkpoints.
     )
 
     # Train the model.
-    #poisson_pinn.train()
+    #wave_pinn.train()
 
     # Load the complete model.
-    poisson_pinn.load_model(load_best = False) # Load the complete model.
-    get_model_info(checkpoint_filename)        # Print model information.
-    
+    wave_pinn.load_model(load_best = False) # Load the complete model.
+    get_model_info(checkpoint_filename)     # Print model information.
+
     # Plot the loss and the solution.
     plot_loss(
-        model_instance = poisson_pinn,
+        model_instance = wave_pinn,
         filename       = "loss_plot.png"
     )
 
-    # Plot the solution with the best model.
-    poisson_pinn.load_model(load_best = True) # Load the best model.
+    # Plot the loss and the solution.
+    wave_pinn.load_model(load_best = True) # Load the best model.
     plot_solution_square(
-        model_instance = poisson_pinn,
+        model_instance = wave_pinn,
         domain_kwargs  = domain_kwargs,
-        filename       = "solution_plot.png"
+        filename       = "solution_plot.png",
+        time_dependent = True,
+        adjust_zlim    = True
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(
-        model_instance = poisson_pinn,
+        model_instance = wave_pinn,
         domain_kwargs  = domain_kwargs,
-        filename       = "comparison_plot.png"
+        filename       = "comparison_plot.png",
+        time_dependent = True,
+        levels         = 10,
+        fix = True, # Fix the levels for the contour plot.
     )

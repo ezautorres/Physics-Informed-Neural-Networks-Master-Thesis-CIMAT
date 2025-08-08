@@ -2,15 +2,23 @@
 __pycache__/
 trash/
 
+# Forward problems trained models.
 forward_problems/poisson_MLP/trained_models/
 forward_problems/laplace_MLP/trained_models/
 forward_problems/helmholtz_MLP/trained_models/
 forward_problems/diffusion_nonhomogeneous_MLP/trained_models/
+forward_problems/klein_gordon_MLP/trained_models/
+forward_problems/wave_highfreq_MLP/trained_models/
 
+#Inverse problems trained models.
 inverse_problems/infer_conductivity_value_MLP/trained_models/
+inverse_problems/infer_conductivity_support_MLP/trained_models/
+inverse_problems/heat_equation_parametric_MLP/trained_models/
+
+#Inverse problems samples.
 inverse_problems/infer_conductivity_value_MLP/samples_analytical.csv
 inverse_problems/infer_conductivity_value_MLP/samples_pinn.csv
-
-inverse_problems/infer_conductivity_support_MLP/trained_models/
 inverse_problems/infer_conductivity_support_MLP/samples_analytical.csv
 inverse_problems/infer_conductivity_support_MLP/samples_pinn.csv
+inverse_problems/heat_equation_parametric_MLP/samples_analytical.csv
+inverse_problems/heat_equation_parametric_MLP/samples_pinn.csv

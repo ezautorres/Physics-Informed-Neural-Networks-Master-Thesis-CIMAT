@@ -17,7 +17,7 @@ from utils import load_samples_from_csv, summarize_results                      
 class MCMC:
     def __init__(
             self, forward_map: Callable, data_x: np.ndarray, data_u: np.ndarray, par_names: str,
-            par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 0.01, 
+            par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 1e-2, 
             n_iter: int = 100000, burn_in: int = 10000,):
         """
         Initialize the MCMC inference class.
@@ -46,15 +46,15 @@ class MCMC:
             Number of burn-in iterations.   
         """
         self.forward_map = forward_map
-        self.data_x = data_x
-        self.data_u = data_u
-        self.par_names = par_names
-        self.par_prior = par_prior
-        self.par_supp = par_supp
-        self.par_true = par_true
-        self.sigma = sigma
-        self.n_iter = n_iter
-        self.burn_in = burn_in
+        self.data_x      = data_x
+        self.data_u      = data_u
+        self.par_names   = par_names
+        self.par_prior   = par_prior
+        self.par_supp    = par_supp
+        self.par_true    = par_true
+        self.sigma       = sigma
+        self.n_iter      = n_iter
+        self.burn_in     = burn_in
 
     def run_mcmc(self):
         """
@@ -73,7 +73,7 @@ class MCMC:
             simdata    = lambda n, loc, scale: stats.norm.rvs(size = n[0], loc = loc, scale = scale)
         )
 
-        self.buq.SimData(x = np.array([self.par_true]))
+        #self.buq.SimData(x = np.array([self.par_true]))
         
         start_time = time.time()
         self.buq.RunMCMC(T = self.n_iter, burn_in = self.burn_in)
@@ -105,7 +105,7 @@ class MCMC:
 
 def MCMCInference(
     filename: str, forward_map: Callable, data_x: np.ndarray, data_u: np.ndarray, par_names: str,
-    par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 0.01, n_iter: int = 100000,
+    par_prior: Callable, par_supp: tuple, par_true: float, sigma: float = 1e-2, n_iter: int = 100000,
     burn_in: int = 10000,
 ):
     """
@@ -168,3 +168,44 @@ def MCMCInference(
     stats = summarize_results(samples = samples, par_true = par_true)
 
     return samples, stats
+
+def define_forward_map(
+        theta: np.ndarray, t: np.ndarray, pinn_instance: object, analytic: bool = False
+        ) -> np.ndarray:
+    """
+    Evaluates either the PINN-predicted solution or the analytical solution for a given set of base input
+    coordinates and physical parameters.
+
+    Parameters
+    ----------
+    theta : np.ndarray
+        Array of shape (P,) containing the parameter values to be appended to each input row in the same
+        order they appear.
+    t : np.ndarray
+        Array of shape (N,) or (N, D) containing the base input coordinates (e.g., spatial position, time,
+        etc.) without parameters.
+    pinn_instance : object
+        Trained PINN model instance, which must implement the methods `.pinn(torch.Tensor)` and 
+        `.analytical_solution(torch.Tensor)`.
+    analytic : bool, optional
+        If True, evaluates the analytical solution; if False, evaluates the PINN-predicted solution.
+        Default is False.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (N,) containing the evaluated solution.
+    """    
+    # Convert inputs to appropriate types.
+    t = np.asarray(t, dtype = np.float32)     
+    t = t.reshape(-1,1) if t.ndim == 1 else t #
+    
+    # Reshape theta to ensure it is a 2D array with one row.
+    theta = np.asarray(theta, dtype = np.float32).reshape(1, -1)
+    theta_cols = np.repeat(theta, t.shape[0], axis = 0)
+
+    # Create the input tensor for the forward map and evaluate the solution.
+    X = np.column_stack((t, theta_cols))
+    eval_fn = pinn_instance.analytical_solution if analytic else pinn_instance.pinn
+
+    return eval_fn(torch.tensor(X)).detach().cpu().numpy().reshape(-1)
