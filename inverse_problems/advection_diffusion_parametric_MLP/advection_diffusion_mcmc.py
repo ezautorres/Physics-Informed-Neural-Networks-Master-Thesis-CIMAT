@@ -141,7 +141,8 @@ samples_analytical, stats_analytical = MCMCInference(
     par_true    = par_true,
     sigma       = sigma,
     n_iter      = n_iter,
-    burn_in     = burn_in
+    burn_in     = burn_in,
+    SimData     = False
 )
 print("\n" + "─"*60 + "\nPINN Forward Map\n" + "─"*60)
 samples_pinn, stats_pinn = MCMCInference(
@@ -155,33 +156,34 @@ samples_pinn, stats_pinn = MCMCInference(
     par_true    = par_true,
     sigma       = sigma,
     n_iter      = n_iter,
-    burn_in     = burn_in
+    burn_in     = burn_in,
+    SimData     = False
 )
 
 # ------------------------------------------------------------------------------------------------------
 # Plot joint posterior distributions.
 # ------------------------------------------------------------------------------------------------------
 # Para α (columna 0)
-#plot_joint_posteriors(
-#    samples1  = samples_analytical["samples"],   # shape (N, 2)
-#    samples2  = samples_pinn["samples"],         # shape (N, 2)
-#    par_true  = [par_true[0], par_true[1]],      # lista de verdaderos
-#    par_names = [r"$\alpha$", r"$\beta$"],       # lista de nombres
-#    bins      = 30,
-#    filename  = "posterior_alpha.png",
-#    param_idx = 0
-#)
-#
-## Para β (columna 1)
-#plot_joint_posteriors(
-#    samples1  = samples_analytical["samples"],
-#    samples2  = samples_pinn["samples"],
-#    par_true  = [par_true[0], par_true[1]],
-#    par_names = [r"$\alpha$", r"$\beta$"],
-#    bins      = 30,
-#    filename  = "posterior_beta.png",
-#    param_idx = 1
-#)
+plot_joint_posteriors(
+    samples1  = samples_analytical["samples"],   # shape (N, 2)
+    samples2  = samples_pinn["samples"],         # shape (N, 2)
+    par_true  = [par_true[0], par_true[1]],      # lista de verdaderos
+    par_names = [r"$\alpha$", r"$\beta$"],       # lista de nombres
+    bins      = 30,
+    filename  = "posterior_alpha.png",
+    param_idx = 0
+)
+
+# Para β (columna 1)
+plot_joint_posteriors(
+    samples1  = samples_analytical["samples"],
+    samples2  = samples_pinn["samples"],
+    par_true  = [par_true[0], par_true[1]],
+    par_names = [r"$\alpha$", r"$\beta$"],
+    bins      = 30,
+    filename  = "posterior_beta.png",
+    param_idx = 1
+)
 
 # Corner
 plot_corner_comparison(
@@ -190,23 +192,23 @@ plot_corner_comparison(
     par_names          = [r"$\alpha$", r"$\beta$"],
     par_true           = par_true,               # lista
     bins               = 50,
-    filename           = "corner_comp.png",
+    filename           = "corner_comparison.pdf",
     show_upper         = False,                  # oculta triángulo superior
     s                  = 5.0,
 )
 
 from plotting import plot_trace_scatter
 
-plot_trace_scatter(
-    samples_analytical = samples_analytical["samples"],  # (N,P)
-    samples_pinn       = samples_pinn["samples"],        # opcional
-    par_names          = [r"$\alpha$", r"$\beta$"],
-    par_true           = par_true,                       # lista tamaño P
-    burn_in            = burn_in,
-    max_points         = 20000,     # baja si quieres más rapidez
-    s                  = 6.0,       # tamaño del punto
-    alpha              = 0.25,      # transparencia
-    add_running_mean   = True,      # dibuja media móvil
-    running_mean_window= 200,
-    filename           = "trace_scatter.png"
-)
+#plot_trace_scatter(
+#    samples_analytical = samples_analytical["samples"],  # (N,P)
+#    samples_pinn       = samples_pinn["samples"],        # opcional
+#    par_names          = [r"$\alpha$", r"$\beta$"],
+#    par_true           = par_true,                       # lista tamaño P
+#    burn_in            = burn_in,
+#    max_points         = 20000,     # baja si quieres más rapidez
+#    s                  = 6.0,       # tamaño del punto
+#    alpha              = 0.25,      # transparencia
+#    add_running_mean   = True,      # dibuja media móvil
+#    running_mean_window= 200,
+#    filename           = "trace_scatter.png"
+#)

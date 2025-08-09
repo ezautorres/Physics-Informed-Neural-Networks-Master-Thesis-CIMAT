@@ -139,7 +139,8 @@ samples_analytical, stats_analytical = MCMCInference(
     par_true    = par_true,
     sigma       = sigma,
     n_iter      = n_iter,
-    burn_in     = burn_in
+    burn_in     = burn_in,
+    SimData     = False
 )
 print("\n" + "─"*60 + "\nPINN Forward Map\n" + "─"*60)
 samples_pinn, stats_pinn = MCMCInference(
@@ -153,7 +154,8 @@ samples_pinn, stats_pinn = MCMCInference(
     par_true    = par_true,
     sigma       = sigma,
     n_iter      = n_iter,
-    burn_in     = burn_in
+    burn_in     = burn_in,
+    SimData     = False
 )
 
 # ------------------------------------------------------------------------------------------------------
@@ -165,5 +167,6 @@ plot_joint_posteriors(
     par_true  = par_true,
     par_names = r"$\alpha$",
     bins      = 30,
-    filename  = "posterior_comparison.png"
+    filename  = "posterior_comparison.pdf",
+    param_idx = 0
 )

@@ -240,7 +240,7 @@ if __name__ == "__main__":
         'center'        : [0,0],
         'radius'        : 1,
         # Collocation points.
-        'interiorSize'  : 3700,
+        'interiorSize'  : 10000,
         'boundarySize'  : 3000,
         'auxiliarySize' : 3200,
         'valSize'       : 2100,
@@ -279,13 +279,13 @@ if __name__ == "__main__":
         optimizer_class     = optimizer_class,                          # Optimizer class (default is LBFGS).
         optimizer_kwargs    = optimizer_kwargs,                         # Optimizer parameters.
         epochs              = 500,                                      # Number of epochs for training.
-        patience            = 50,                                       # Patience for early stopping.
+        patience            = 100,                                      # Patience for early stopping.
         sampling_fn         = sample_circle_uniform_center_restriction, # Sampling function.
         checkpoint_filename = checkpoint_filename,                      # Filename for the checkpoints.
     )
 
     # Train the model.
-    infer_R_pinn.train()
+    #infer_R_pinn.train()
 
     # Load the complete model.
     infer_R_pinn.load_model(load_best = False) # Load the complete model.

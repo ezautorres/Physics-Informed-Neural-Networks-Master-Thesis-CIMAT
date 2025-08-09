@@ -295,7 +295,7 @@ if __name__ == "__main__":
     # Plot the loss and the solution.
     plot_loss(
         model_instance = infer_rho_pinn,
-        filename       = "loss_plot.png"
+        filename       = "loss_plot.pdf"
     )
 
     # Plot the solution with the best model.
@@ -304,7 +304,7 @@ if __name__ == "__main__":
         model_instance = infer_rho_pinn,
         domain_kwargs  = domain_kwargs, 
         parameters     = [0.85, 3.2],
-        filename       = "solution_plot.png"
+        filename       = "solution_plot.pdf"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
@@ -312,5 +312,5 @@ if __name__ == "__main__":
         model_instance = infer_rho_pinn,
         domain_kwargs  = domain_kwargs,
         parameters     = [0.85, 3.2],
-        filename       = "comparison_plot.png"
+        filename       = "comparison_plot.pdf"
     )

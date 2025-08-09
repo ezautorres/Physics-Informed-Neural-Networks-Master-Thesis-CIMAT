@@ -231,7 +231,7 @@ if __name__ == "__main__":
     # Plot the loss and the solution.
     plot_loss(
         model_instance = helmholtz_pinn,
-        filename       = "loss_plot.pdf"
+        filename       = "loss_plot.png"
     )
 
     # Plot the solution with the best model.
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     plot_solution_square(
         model_instance = helmholtz_pinn,
         domain_kwargs  = domain_kwargs,
-        filename       = "solution_plot.pdf",
+        filename       = "solution_plot.png",
         parameters     = [k]
     )
 
@@ -247,6 +247,6 @@ if __name__ == "__main__":
     plot_comparison_contour_square(
         model_instance = helmholtz_pinn,
         domain_kwargs  = domain_kwargs,
-        filename       = "comparison_plot.pdf",
+        filename       = "comparison_plot.png",
         parameters     = [k]
     )

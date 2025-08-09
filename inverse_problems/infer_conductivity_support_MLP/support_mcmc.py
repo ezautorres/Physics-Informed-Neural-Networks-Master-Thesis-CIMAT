@@ -41,11 +41,11 @@ Usage
 >>> # Generate synthetic data from the analytical solution
 >>> data_x, data_u_exact, data_u = generate_synthetic_data(
 ...     dim1_min=0, dim1_max=L, dim2_min=0, dim2_max=T, n_points=20,
-...     pinn_instance=infer_rho_pinn, fixed_params=[n], par_true=[par_true], sigma=0.01
+...     pinn_instance=infer_R_pinn, fixed_params=[n], par_true=[par_true], sigma=0.01
 ... )
 >>> # Define forward maps
->>> analytical_forward_map = lambda theta, t: define_forward_map(theta, t, pinn_instance=infer_rho_pinn, analytic=True)
->>> pinn_forward_map = lambda theta, t: define_forward_map(theta, t, pinn_instance=infer_rho_pinn, analytic=False)
+>>> analytical_forward_map = lambda theta, t: define_forward_map(theta, t, pinn_instance=infer_R_pinn, analytic=True)
+>>> pinn_forward_map = lambda theta, t: define_forward_map(theta, t, pinn_instance=infer_R_pinn, analytic=False)
 >>> # Run MCMC inference
 >>> samples_analytical, stats_analytical = MCMCInference(
 ...     filename="samples_analytical.csv", forward_map=analytical_forward_map,
@@ -79,43 +79,43 @@ from inference.mcmc import define_forward_map                                   
 from utils import get_model_info, load_full_model                                  # Import utility functions.
 from plotting import plot_joint_posteriors                                         # Import plotting function.
 from sampling import generate_synthetic_data                                       # Import synthetic data generation utility.
-from inverse_problems.infer_conductivity_value_MLP.infer_conductivity_value_MLP import InferringConductivityValue
+from inverse_problems.infer_conductivity_support_MLP.infer_conductivity_support_MLP import InferringConductivitySupport # Import the PINN model class.
 
 # ------------------------------------------------------------------------------------------------------
 # Load the trained PINN model for parameter inference.
 # ------------------------------------------------------------------------------------------------------
-checkpoint_filename = "infer_conductivity_value_MLP.pth"
-infer_rho_pinn = load_full_model(
+checkpoint_filename = "infer_conductivity_support_MLP.pth"
+infer_R_pinn = load_full_model(
     checkpoint_path = os.path.join("trained_models", checkpoint_filename),
-    model_class     = InferringConductivityValue)
+    model_class     = InferringConductivitySupport)
 get_model_info(checkpoint_filename) # Print model information.
 
 # ------------------------------------------------------------------------------------------------------
 # Parameters for MCMC inference.
 # ------------------------------------------------------------------------------------------------------ 
-R         = 0.85                      # Radius of the circular domain.
-par_true  = 3.2                       # True value of the parameters to be inferred.
-par_names = [r"$\rho$"]               # Name of the parameters to be inferred.
-par_prior = [stats.uniform(0,10)]     # Prior distribution for the parameters.
-par_supp  = [lambda p: 0 <= p <= 10]  # Support function for the prior distributions.
-sigma     = 0.01                      # Standard deviation for the noise in the data.
-n_iter    = 500000                    # Number of MCMC iterations.
-burn_in   = int(0.1 * n_iter)         # Burn-in period.
+rho       = 6                       # Rho value.
+par_true  = 0.725                   # True value of the parameters to be inferred.
+par_names = [r"$R$"]                # Name of the parameters to be inferred.
+par_prior = [stats.uniform(0,1)]    # Prior distribution for the parameters.
+par_supp  = [lambda R: 0 <= R <= 1] # Support function for the prior distributions.
+sigma     = 0.01                    # Standard deviation for the noise in the data.
+n_iter    = 500000                  # Number of MCMC iterations.
+burn_in   = int(0.1 * n_iter)       # Burn-in period.
 
 # ------------------------------------------------------------------------------------------------------
 # Data and forward map definition.
 # ------------------------------------------------------------------------------------------------------
-n_points = 20  # Number of data points to generate.
+n_points = 10  # Number of data points to generate.
 data_x, data_u_exact, data_u = generate_synthetic_data(
-    dim1_min = 0, dim1_max = 1, dim2_min = 0, dim2_max = 1, n_points = n_points, pinn_instance = infer_rho_pinn,
-    fixed_params = [R], par_true = [par_true], sigma = sigma
+    dim1_min = 0, dim1_max = 1, dim2_min = 0, dim2_max = 1, n_points = n_points, pinn_instance = infer_R_pinn,
+    fixed_params = [rho], par_true = [par_true], sigma = sigma
     )
 
 # Define the forward maps for the analytical and PINN solutions.
 analytical_forward_map = lambda theta, t: define_forward_map( # Analytical forward map.
-    theta, t, pinn_instance = infer_rho_pinn, analytic = True)
+    theta, t, pinn_instance = infer_R_pinn, analytic = True)
 pinn_forward_map       = lambda theta, t: define_forward_map( # PINN forward map.
-    theta, t, pinn_instance = infer_rho_pinn, analytic = False)
+    theta, t, pinn_instance = infer_R_pinn, analytic = False)
 
 # ------------------------------------------------------------------------------------------------------
 # File paths for saving/loading MCMC samples.
@@ -164,7 +164,7 @@ plot_joint_posteriors(
     samples1  = samples_analytical["samples"],
     samples2  = samples_pinn["samples"],
     par_true  = par_true,          # puede ser escalar o [par_true]
-    par_names = r"$\rho$",         # o ["$\\rho$"]
+    par_names = r"$R$",         # o ["$\\rho$"]
     bins      = 30,
     filename  = "posterior_comparison.png",
     param_idx = 0,                 # <<<<<< clave

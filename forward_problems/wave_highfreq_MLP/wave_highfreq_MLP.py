@@ -217,5 +217,4 @@ if __name__ == "__main__":
         filename       = "comparison_plot.png",
         time_dependent = True,
         levels         = 10,
-        fix = True, # Fix the levels for the contour plot.
     )

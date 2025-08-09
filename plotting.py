@@ -825,7 +825,7 @@ def plot_corner_comparison(
 
     fig.tight_layout()
     if filename:
-        plt.savefig(filename, bbox_inches="tight", dpi=500)
+        plt.savefig(filename, bbox_inches="tight", dpi=300)
     plt.show()
 
 
