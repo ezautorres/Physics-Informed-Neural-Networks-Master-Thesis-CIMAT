@@ -406,10 +406,10 @@ def generate_square_grid_points(
 
     return X_total.requires_grad_(train).to(device)
 
-def generate_synthetic_data(
+def generate_synthetic_data_on_square(
         dim1_min: float, dim1_max: float, dim2_min: float, dim2_max: float, n_points: int, 
         pinn_instance: object, fixed_params: Optional[Tuple[float, ...]] = None,
-        par_true: Optional[Tuple[float, ...]] = None, sigma: float = 1e-2
+        par_true: Optional[Tuple[float, ...]] = None, sigma: float = 1e-2,
         ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Generates synthetic data for PINN inference, supporting any number of fixed parameters and true
@@ -469,5 +469,79 @@ def generate_synthetic_data(
     X = torch.tensor(np.column_stack(X_parts), dtype = torch.float32)                      # Stack to create the full input for the analytical solution.
     data_u_exact = pinn_instance.analytical_solution(X).detach().cpu().numpy().reshape(-1) # Compute exact solution.
     data_u = data_u_exact + np.random.normal(0, sigma, size=data_u_exact.shape)            # Add Gaussian noise.
+
+    return data_x, data_u_exact, data_u
+
+# --- New function: generate_synthetic_data_on_circle_boundary ---
+def generate_synthetic_data_on_circle_boundary(
+        center: Tuple[float, float], radius: float, n_points: int,
+        pinn_instance: object, fixed_params: Optional[Tuple[float, ...]] = None,
+        par_true: Optional[Tuple[float, ...]] = None, sigma: float = 1e-2,
+        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Generates synthetic data on the *boundary* of a circle for PINN inference.
+
+    Points are sampled uniformly along the circumference defined by `center` and `radius`.
+    Supports optional fixed parameters (appended after (x, y)) and true parameters for
+    the forward model evaluation.
+
+    Parameters
+    ----------
+    center : tuple of float
+        (x0, y0) coordinates of the circle center.
+    radius : float
+        Circle radius (must be > 0).
+    n_points : int
+        Number of boundary data points to generate.
+    pinn_instance : object
+        Model instance with an `.analytical_solution(torch.Tensor)` method.
+    fixed_params : tuple of float, optional
+        Fixed parameters appended after (x, y). Repeated for all points.
+    par_true : tuple of float, optional
+        True parameter values appended after the fixed parameters for the forward evaluation.
+    sigma : float, optional
+        Standard deviation of additive Gaussian noise.
+
+    Returns
+    -------
+    data_x : np.ndarray
+        Input locations on the boundary (without `par_true`), shape (n_points, D).
+    data_u_exact : np.ndarray
+        Exact solution values without noise, shape (n_points,).
+    data_u : np.ndarray
+        Noisy observations, shape (n_points,).
+    """
+    # Basic checks
+    if radius <= 0:
+        raise ValueError("Invalid radius: must be greater than zero.")
+    if len(center) != 2:
+        raise ValueError("Invalid center: must be a tuple of length 2 (x0, y0).")
+
+    # Sample boundary angles uniformly and map to (x, y) on the circumference
+    theta = np.random.uniform(0.0, 2.0 * np.pi, n_points)
+    x = center[0] + radius * np.cos(theta)
+    y = center[1] + radius * np.sin(theta)
+
+    # Assemble input features for data_x (without par_true)
+    data_x_parts = [x, y]
+    if fixed_params is not None:
+        for p in fixed_params:
+            data_x_parts.append(np.full_like(x, p, dtype=np.float32))
+    data_x = np.column_stack(data_x_parts)
+
+    # Build inputs for evaluating the analytical solution (append par_true if provided)
+    X_parts = [x, y]
+    if fixed_params is not None:
+        for p in fixed_params:
+            X_parts.append(np.full_like(x, p, dtype=np.float32))
+    if par_true is not None:
+        for p in par_true:
+            X_parts.append(np.full_like(x, p, dtype=np.float32))
+
+    X = torch.tensor(np.column_stack(X_parts), dtype=torch.float32)
+
+    # Evaluate exact solution and add Gaussian noise
+    data_u_exact = pinn_instance.analytical_solution(X).detach().cpu().numpy().reshape(-1)
+    data_u = data_u_exact + np.random.normal(0.0, sigma, size=data_u_exact.shape)
 
     return data_x, data_u_exact, data_u

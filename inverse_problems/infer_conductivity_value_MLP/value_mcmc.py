@@ -78,7 +78,7 @@ from inference.mcmc import MCMCInference                                        
 from inference.mcmc import define_forward_map                                      # Import forward map definition utility.
 from utils import get_model_info, load_full_model                                  # Import utility functions.
 from plotting import plot_joint_posteriors                                         # Import plotting function.
-from sampling import generate_synthetic_data                                       # Import synthetic data generation utility.
+from sampling import generate_synthetic_data_on_circle_boundary                    # Import synthetic data generation utility.
 from inverse_problems.infer_conductivity_value_MLP.infer_conductivity_value_MLP import InferringConductivityValue
 
 # ------------------------------------------------------------------------------------------------------
@@ -106,10 +106,10 @@ burn_in   = int(0.1 * n_iter)         # Burn-in period.
 # Data and forward map definition.
 # ------------------------------------------------------------------------------------------------------
 n_points = 20  # Number of data points to generate.
-data_x, data_u_exact, data_u = generate_synthetic_data(
-    dim1_min = 0, dim1_max = 1, dim2_min = 0, dim2_max = 1, n_points = n_points, pinn_instance = infer_rho_pinn,
+data_x, data_u_exact, data_u = generate_synthetic_data_on_circle_boundary(
+    center = (0.0, 0.0), radius = 1.0, n_points = n_points, pinn_instance = infer_rho_pinn,
     fixed_params = [R], par_true = [par_true], sigma = sigma
-    )
+)
 
 # Define the forward maps for the analytical and PINN solutions.
 analytical_forward_map = lambda theta, t: define_forward_map( # Analytical forward map.
@@ -166,6 +166,6 @@ plot_joint_posteriors(
     par_true  = par_true,          # puede ser escalar o [par_true]
     par_names = r"$\rho$",         # o ["$\\rho$"]
     bins      = 30,
-    filename  = "posterior_comparison.png",
-    param_idx = 0,                 # <<<<<< clave
+    filename  = "posterior_comparison.pdf",
+    param_idx = 0,               
 )

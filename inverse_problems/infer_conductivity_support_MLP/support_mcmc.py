@@ -78,7 +78,7 @@ from inference.mcmc import MCMCInference                                        
 from inference.mcmc import define_forward_map                                      # Import forward map definition utility.
 from utils import get_model_info, load_full_model                                  # Import utility functions.
 from plotting import plot_joint_posteriors                                         # Import plotting function.
-from sampling import generate_synthetic_data                                       # Import synthetic data generation utility.
+from sampling import generate_synthetic_data_on_circle_boundary                    # Import synthetic data generation utility.
 from inverse_problems.infer_conductivity_support_MLP.infer_conductivity_support_MLP import InferringConductivitySupport # Import the PINN model class.
 
 # ------------------------------------------------------------------------------------------------------
@@ -99,15 +99,15 @@ par_names = [r"$R$"]                # Name of the parameters to be inferred.
 par_prior = [stats.uniform(0,1)]    # Prior distribution for the parameters.
 par_supp  = [lambda R: 0 <= R <= 1] # Support function for the prior distributions.
 sigma     = 0.01                    # Standard deviation for the noise in the data.
-n_iter    = 500000                  # Number of MCMC iterations.
+n_iter    = 100000                  # Number of MCMC iterations.
 burn_in   = int(0.1 * n_iter)       # Burn-in period.
 
 # ------------------------------------------------------------------------------------------------------
 # Data and forward map definition.
 # ------------------------------------------------------------------------------------------------------
-n_points = 10  # Number of data points to generate.
-data_x, data_u_exact, data_u = generate_synthetic_data(
-    dim1_min = 0, dim1_max = 1, dim2_min = 0, dim2_max = 1, n_points = n_points, pinn_instance = infer_R_pinn,
+n_points = 50  # Number of data points to generate.
+data_x, data_u_exact, data_u = generate_synthetic_data_on_circle_boundary(
+    center = (0.0, 0.0), radius = 1.0, n_points = n_points, pinn_instance = infer_R_pinn,
     fixed_params = [rho], par_true = [par_true], sigma = sigma
     )
 
@@ -166,6 +166,6 @@ plot_joint_posteriors(
     par_true  = par_true,          # puede ser escalar o [par_true]
     par_names = r"$R$",         # o ["$\\rho$"]
     bins      = 30,
-    filename  = "posterior_comparison.png",
+    filename  = "posterior_comparison.pdf",
     param_idx = 0,                 # <<<<<< clave
 )

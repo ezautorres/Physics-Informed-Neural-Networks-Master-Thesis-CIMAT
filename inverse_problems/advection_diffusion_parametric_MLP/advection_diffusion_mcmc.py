@@ -78,7 +78,7 @@ from inference.mcmc import MCMCInference                                        
 from inference.mcmc import define_forward_map                                          # Import forward map definition utility.
 from utils import get_model_info, load_full_model                                      # Import utility functions.
 from plotting import plot_joint_posteriors, plot_trajectory_2d, plot_corner_comparison # Import plotting utilities.
-from sampling import generate_synthetic_data                                           # Import synthetic data generation utility.
+from sampling import generate_synthetic_data_on_square                                 # Import synthetic data generation utility.
 from inverse_problems.advection_diffusion_parametric_MLP.advection_diffusion_parametric_MLP import AdvectionDiffusionPinn # Import the PINN class.
 
 # ------------------------------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ burn_in   = int(0.1 * n_iter)                          # Burn-in period.
 # Synthetic data generation and forward map definition.
 # ------------------------------------------------------------------------------------------------------
 n_points = 100  # Number of data points to generate.
-data_x, data_u_exact, data_u = generate_synthetic_data(
+data_x, data_u_exact, data_u = generate_synthetic_data_on_square(
     dim1_min = 0, dim1_max = 1, dim2_min = 0, dim2_max = 1, n_points = n_points,
     pinn_instance = advection_diffusion_pinn, fixed_params = [n], par_true = par_true, sigma = sigma
     )
@@ -164,26 +164,26 @@ samples_pinn, stats_pinn = MCMCInference(
 # Plot joint posterior distributions.
 # ------------------------------------------------------------------------------------------------------
 # Para α (columna 0)
-plot_joint_posteriors(
-    samples1  = samples_analytical["samples"],   # shape (N, 2)
-    samples2  = samples_pinn["samples"],         # shape (N, 2)
-    par_true  = [par_true[0], par_true[1]],      # lista de verdaderos
-    par_names = [r"$\alpha$", r"$\beta$"],       # lista de nombres
-    bins      = 30,
-    filename  = "posterior_alpha.png",
-    param_idx = 0
-)
-
-# Para β (columna 1)
-plot_joint_posteriors(
-    samples1  = samples_analytical["samples"],
-    samples2  = samples_pinn["samples"],
-    par_true  = [par_true[0], par_true[1]],
-    par_names = [r"$\alpha$", r"$\beta$"],
-    bins      = 30,
-    filename  = "posterior_beta.png",
-    param_idx = 1
-)
+#plot_joint_posteriors(
+#    samples1  = samples_analytical["samples"],   # shape (N, 2)
+#    samples2  = samples_pinn["samples"],         # shape (N, 2)
+#    par_true  = [par_true[0], par_true[1]],      # lista de verdaderos
+#    par_names = [r"$\alpha$", r"$\beta$"],       # lista de nombres
+#    bins      = 30,
+#    filename  = "posterior_alpha.png",
+#    param_idx = 0
+#)
+#
+## Para β (columna 1)
+#plot_joint_posteriors(
+#    samples1  = samples_analytical["samples"],
+#    samples2  = samples_pinn["samples"],
+#    par_true  = [par_true[0], par_true[1]],
+#    par_names = [r"$\alpha$", r"$\beta$"],
+#    bins      = 30,
+#    filename  = "posterior_beta.png",
+#    param_idx = 1
+#)
 
 # Corner
 plot_corner_comparison(

@@ -78,7 +78,7 @@ from inference.mcmc import MCMCInference                                        
 from inference.mcmc import define_forward_map                                      # Import forward map definition utility.
 from utils import get_model_info, load_full_model                                  # Import utility functions.
 from plotting import plot_joint_posteriors                                         # Import plotting function.
-from sampling import generate_synthetic_data                                       # Import synthetic data generation utility.
+from sampling import generate_synthetic_data_on_square                             # Import synthetic data generation utility.
 from inverse_problems.heat_equation_parametric_MLP.heat_equation_parametric_MLP import HeatEquationPinn # Import the PINN class for heat equation parameter inference.
 
 # ------------------------------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ burn_in   = int(0.1 * n_iter)         # Burn-in period.
 # Synthetic data generation and forward map definition.
 # ------------------------------------------------------------------------------------------------------
 n_points = 20  # Number of data points to generate.
-data_x, data_u_exact, data_u = generate_synthetic_data(
+data_x, data_u_exact, data_u = generate_synthetic_data_on_square(
     dim1_min = 0, dim1_max = L, dim2_min = 0, dim2_max = T, n_points = n_points, pinn_instance = heat_pinn,
     fixed_params = [n], par_true = [par_true], sigma = sigma
     )

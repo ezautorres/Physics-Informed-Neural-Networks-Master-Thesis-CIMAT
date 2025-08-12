@@ -609,7 +609,7 @@ def plot_joint_posteriors(
     if true_val is not None:
         label_str = f"True {xlabel}" if xlabel else "True value"
         ax.axvline(x=true_val, color="red", linestyle="-", linewidth=3,
-                   label=fr"{label_str} = {true_val:.2f}")
+                   label=fr"{label_str} = {true_val:.3f}")
 
     # Labels & styling
     ax.legend(fontsize=14)
@@ -761,13 +761,13 @@ def plot_corner_comparison(
             arr = arr.T
         return arr
 
-    A = _to_2d(samples_analytical)
+    A = _to_2d(samples_analytical[250000:])
     P = A.shape[1]
     if P < 2:
         raise ValueError("plot_corner_comparison requiere al menos 2 parámetros.")
 
     has_pinn = samples_pinn is not None
-    B = _to_2d(samples_pinn) if has_pinn else None
+    B = _to_2d(samples_pinn[250000:]) if has_pinn else None
     if has_pinn and B.shape[1] != P:
         raise ValueError(f"samples_pinn tiene {B.shape[1]} params; se esperaban {P}.")
 
@@ -794,10 +794,10 @@ def plot_corner_comparison(
 
             if i == j:
                 # Diagonal: histogramas marginales
-                ax.hist(A[:, j], bins=bins, density=True, alpha=0.8,
+                ax.hist(A[:, j], bins=bins, density=True, alpha=0.85,
                         color="#1f77b4", label="Analytical")
                 if has_pinn:
-                    ax.hist(B[:, j], bins=bins, density=True, alpha=0.7,
+                    ax.hist(B[:, j], bins=bins, density=True, alpha=0.75,
                             color="#ff7f0e", label="PINN")
                 if par_true[j] is not None:
                     ax.axvline(par_true[j], color="red", lw=2, ls="--")
@@ -805,9 +805,10 @@ def plot_corner_comparison(
                 ax.set_xlabel(par_names[j], fontsize=12)
             else:
                 # Off-diagonal: dispersión conjunta
-                ax.scatter(A[:, j], A[:, i], s=s, alpha=0.01, color="#1f77b4")
+                A, B = A[:150000], B[:150000]
+                ax.scatter(A[:, j], A[:, i], s=s, alpha=0.02, color="#1f77b4")
                 if has_pinn:
-                    ax.scatter(B[:, j], B[:, i], s=s, alpha=0.01, color="#ff7f0e")
+                    ax.scatter(B[:, j], B[:, i], s=s, alpha=0.02, color="#ff7f0e")
                 if par_true[j] is not None and par_true[i] is not None:
                     ax.plot(par_true[j], par_true[i], marker="x", color="red", ms=8, mew=2)
                 if i == P - 1:
@@ -816,12 +817,17 @@ def plot_corner_comparison(
                     ax.set_ylabel(par_names[i], fontsize=12)
             ax.grid(True, alpha=0.3)
 
-    handles = [plt.Line2D([0], [0], color="#1f77b4", lw=6, alpha=0.8)]
+    handles = [plt.Line2D([0], [0], color="#1f77b4", lw=6, alpha=0.85)]
     labels = ["Analytical"]
     if has_pinn:
-        handles.append(plt.Line2D([0], [0], color="#ff7f0e", lw=6, alpha=0.7))
+        handles.append(plt.Line2D([0], [0], color="#ff7f0e", lw=6, alpha=0.75))
         labels.append("PINN")
-    fig.legend(handles, labels, loc="upper right", fontsize = 12)
+    fig.legend(
+    handles, labels,
+    loc="center",
+    bbox_to_anchor=(0.75, 0.75),  # Ajusta estos valores
+    fontsize=12
+)
 
     fig.tight_layout()
     if filename:

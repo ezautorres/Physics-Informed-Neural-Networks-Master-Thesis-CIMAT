@@ -240,10 +240,10 @@ if __name__ == "__main__":
         'center'        : [0,0],
         'radius'        : 1,
         # Collocation points.
-        'interiorSize'  : 10000,
-        'boundarySize'  : 3000,
-        'auxiliarySize' : 3200,
-        'valSize'       : 2100,
+        'interiorSize'  : 1000,
+        'boundarySize'  : 1700,
+        'auxiliarySize' : 1000,
+        'valSize'       : 1500,
         # Parameters for the PINN.
         'fixed_params'  : [6],     # Fixed parameter rho.
         'param_domains' : [(0,1)], # Parameter domains for R.
@@ -256,16 +256,16 @@ if __name__ == "__main__":
     # Architecture and optimizer parameters.
     # ---------------------------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize'  : 4,       # Input size of the MLP (2D coordinates + 2 parameters).
-        'hidden_lys' : [75]*3,  # Hidden layers of the MLP.
-        'outputSize' : 1        # Output size of the MLP.
+        'inputSize'  : 4,                  # Input size of the MLP (2D coordinates + 2 parameters).
+        'hidden_lys' : [100,1000,100,100], # Hidden layers of the MLP.
+        'outputSize' : 1                   # Output size of the MLP.
     }
     
     optimizer_class = torch.optim.LBFGS
     optimizer_kwargs = {
         'lr'               : 1,             # Learning rate.
-        'max_iter'         : 100,           # Maximum number of iterations.
-        'tolerance_grad'   : 1e-09,         # Tolerance for the gradient.
+        'max_iter'         : 20,            # Maximum number of iterations.
+        'tolerance_grad'   : 1e-07,         # Tolerance for the gradient.
         'tolerance_change' : 1e-09,         # Tolerance for the change in the loss.
         'history_size'     : 100,           # History size for the optimizer.
         'line_search_fn'   : "strong_wolfe" # Line search function for the optimizer.
@@ -278,8 +278,8 @@ if __name__ == "__main__":
         domain_kwargs       = domain_kwargs,                            # Domain parameters.
         optimizer_class     = optimizer_class,                          # Optimizer class (default is LBFGS).
         optimizer_kwargs    = optimizer_kwargs,                         # Optimizer parameters.
-        epochs              = 500,                                      # Number of epochs for training.
-        patience            = 100,                                      # Patience for early stopping.
+        epochs              = 2000,                                     # Number of epochs for training.
+        patience            = 200,                                      # Patience for early stopping.
         sampling_fn         = sample_circle_uniform_center_restriction, # Sampling function.
         checkpoint_filename = checkpoint_filename,                      # Filename for the checkpoints.
     )
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     # Plot the loss and the solution.
     plot_loss(
         model_instance = infer_R_pinn,
-        filename       = "loss_plot.png"
+        filename       = "loss_plot.pdf"
     )
 
     # Plot the solution with the best model.
@@ -303,7 +303,7 @@ if __name__ == "__main__":
         model_instance = infer_R_pinn,
         domain_kwargs  = domain_kwargs, 
         parameters     = [6, 0.725],
-        filename       = "solution_plot.png"
+        filename       = "solution_plot.pdf"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
@@ -311,5 +311,5 @@ if __name__ == "__main__":
         model_instance = infer_R_pinn,
         domain_kwargs  = domain_kwargs,
         parameters     = [6, 0.725],
-        filename       = "comparison_plot.png"
+        filename       = "comparison_plot.pdf"
     )
