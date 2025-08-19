@@ -168,9 +168,12 @@ if __name__ == "__main__":
     # Architecture and optimizer parameters.
     # ---------------------------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize'  : 2,               # Because we do not have parameters.
-        'hidden_lys' : [100, 100, 100], # Hidden layers of the MLP.
-        'outputSize' : 1                # Output size of the MLP.
+        'inputSize'     : 2,               # Because we do not have parameters.
+        'hidden_lys'    : [100, 100, 100], # Hidden layers of the MLP.
+        'outputSize'    : 1,               # Output size of the MLP.
+        'activation'    : 'tanh',          # Activation function for the MLP.
+        'dropout'       : 0.0,             # Dropout rate for the MLP.
+        'normalization' : True,            # Whether to apply layer normalization.
     }
     
     optimizer_class = torch.optim.LBFGS
@@ -204,18 +207,18 @@ if __name__ == "__main__":
     get_model_info(checkpoint_filename)        # Print model information.
     
     # Plot the loss and the solution.
-    plot_loss(
-        model_instance = poisson_pinn,
-        filename       = "loss_plot.png"
-    )
+    #plot_loss(
+    #    model_instance = poisson_pinn,
+    #    filename       = "loss_plot.png"
+    #)
 
     # Plot the solution with the best model.
-    poisson_pinn.load_model(load_best = True) # Load the best model.
-    plot_solution_square(
-        model_instance = poisson_pinn,
-        domain_kwargs  = domain_kwargs,
-        filename       = "solution_plot.png"
-    )
+    #poisson_pinn.load_model(load_best = True) # Load the best model.
+    #plot_solution_square(
+    #    model_instance = poisson_pinn,
+    #    domain_kwargs  = domain_kwargs,
+    #    filename       = "solution_plot.png"
+    #)
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(

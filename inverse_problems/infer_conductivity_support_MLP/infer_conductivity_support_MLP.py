@@ -292,19 +292,19 @@ if __name__ == "__main__":
     get_model_info(checkpoint_filename)        # Print model information.
 
     # Plot the loss and the solution.
-    plot_loss(
-        model_instance = infer_R_pinn,
-        filename       = "loss_plot.pdf"
-    )
+    #plot_loss(
+    #    model_instance = infer_R_pinn,
+    #    filename       = "loss_plot.pdf"
+    #)
 
     # Plot the solution with the best model.
-    infer_R_pinn.load_model(load_best = True) # Load the best model.
-    plot_solution_circle(
-        model_instance = infer_R_pinn,
-        domain_kwargs  = domain_kwargs, 
-        parameters     = [6, 0.725],
-        filename       = "solution_plot.pdf"
-    )
+    #infer_R_pinn.load_model(load_best = True) # Load the best model.
+    #plot_solution_circle(
+    #    model_instance = infer_R_pinn,
+    #    domain_kwargs  = domain_kwargs, 
+    #    parameters     = [6, 0.725],
+    #    filename       = "solution_plot.pdf"
+    #)
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_circle(

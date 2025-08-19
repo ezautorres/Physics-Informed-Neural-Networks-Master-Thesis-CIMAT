@@ -77,7 +77,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 from inference.mcmc import MCMCInference                                               # Import MCMC inference class and utility function.
 from inference.mcmc import define_forward_map                                          # Import forward map definition utility.
 from utils import get_model_info, load_full_model                                      # Import utility functions.
-from plotting import plot_joint_posteriors, plot_trajectory_2d, plot_corner_comparison # Import plotting utilities.
+from plotting import plot_joint_posteriors, plot_corner_comparison # Import plotting utilities.
 from sampling import generate_synthetic_data_on_square                                 # Import synthetic data generation utility.
 from inverse_problems.advection_diffusion_parametric_MLP.advection_diffusion_parametric_MLP import AdvectionDiffusionPinn # Import the PINN class.
 
@@ -191,24 +191,6 @@ plot_corner_comparison(
     samples_pinn       = samples_pinn["samples"],
     par_names          = [r"$\alpha$", r"$\beta$"],
     par_true           = par_true,               # lista
-    bins               = 50,
+    bins               = 30,
     filename           = "corner_comparison.pdf",
-    show_upper         = False,                  # oculta triángulo superior
-    s                  = 5.0,
 )
-
-from plotting import plot_trace_scatter
-
-#plot_trace_scatter(
-#    samples_analytical = samples_analytical["samples"],  # (N,P)
-#    samples_pinn       = samples_pinn["samples"],        # opcional
-#    par_names          = [r"$\alpha$", r"$\beta$"],
-#    par_true           = par_true,                       # lista tamaño P
-#    burn_in            = burn_in,
-#    max_points         = 20000,     # baja si quieres más rapidez
-#    s                  = 6.0,       # tamaño del punto
-#    alpha              = 0.25,      # transparencia
-#    add_running_mean   = True,      # dibuja media móvil
-#    running_mean_window= 200,
-#    filename           = "trace_scatter.png"
-#)
