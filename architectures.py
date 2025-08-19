@@ -151,7 +151,7 @@ class MLP(nn.Module):
 
             prev_size = hidden_sz
 
-        output_layer = nn.Linear(prev_size, self.output_size)
+        output_layer = nn.Linear(prev_size, self.outputSize)
         nn.init.xavier_uniform_(output_layer.weight)
         nn.init.zeros_(output_layer.bias)
         layers.append(output_layer)

@@ -1,30 +1,32 @@
 # Poisson Equation
 
-This experiment solves the 2D Poisson equation on the unit square \[0,1\]×\[0,1\] using a Physics-Informed Neural Network.
+This experiment solves the 2D Poisson equation on the unit square $\[0,1\]\times\[0,1\]$ using a Physics-Informed Neural Network. This experiment demonstrates how a Physics-Informed Neural Network (PINN) can solve the 2D Poisson equation, showcasing its ability to approximate PDE solutions without labeled data.
 
 ## Problem Description
 
 The following PDE is solved:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Δu(x,y) = –2π² · sin(πx) · sin(πy),
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; $\Delta\boldsymbol{u}(x,y) = -2\pi^2 \cdot \sin(\pi x) \cdot \sin(\pi y)$,
 
 with homogeneous Dirichlet boundary conditions:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; $\boldsymbol{u}(x,0) = \boldsymbol{u}(x,1) = \boldsymbol{u}(0,y) = \boldsymbol{u}(1,y) = 0$.
 
 The analytical solution is:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,y) = sin(πx) · sin(πy).
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; $\boldsymbol{u}(x,y) = \sin(\pi x) \cdot \sin(\pi y)$.
         
----
-
 ## Model Summary
 
-- Neural network: MLP with 3 hidden layers of 100 neurons each.
-- Optimizer: L-BFGS with strong Wolfe line search.
-- Domain: unit square \[0,1\]×\[0,1\]
-- Collocation points: 500 interior, 8000 on the boundary.
-- Loss: PDE residual + boundary condition loss.
+| Component   | Choice                                  |
+|-------------|-----------------------------------------|
+| Network     | MLP with 3 hidden layers (100 neurons)  |
+| Optimizer   | L-BFGS (strong Wolfe line search)       |
+| Activation  | Tanh                                    |
+| Dropout     | 0.01                                    |
+| Domain      | Unit square $\[0,1\]\times\[0,1\]$      |
+| Collocation | 500 interior, 8000 boundary points      |
+| Loss        | PDE residual + boundary condition loss  |
 
 ## Training Losses
 
@@ -46,4 +48,4 @@ The analytical solution is:
 
 ---
 
-*Author: Ezau Faridh Torres Torres · CIMAT · Jun 2025*
+*Author: Ezau Faridh Torres Torres · CIMAT · Aug 2025*

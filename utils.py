@@ -84,7 +84,6 @@ from architectures import MLP, ConvNet2D  # Neural network models.
 from sampling import (                    # Sampling utilities.
     sample_circle_uniform_center_restriction, 
     sample_square_uniform,
-    generate_square_grid_points
 )
 # Map string names to actual classes.
 MODEL_REGISTRY = {
@@ -98,7 +97,6 @@ OPTIMIZER_REGISTRY = {
 SAMPLING_REGISTRY = {
     "sample_square_uniform": sample_square_uniform,
     "sample_circle_uniform_center_restriction": sample_circle_uniform_center_restriction,
-    "generate_square_grid_points": generate_square_grid_points,
 }
 
 def get_model_info(filename: str, device: str = 'cpu') -> None:

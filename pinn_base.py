@@ -194,9 +194,9 @@ class PinnBase(ABC):
         ----------
         X : torch.Tensor
             Tensor of shape (N, 2 + n_params), where:
-                - X[:,0] = dim1 (e.g., x).
-                - X[:,1] = dim2 (e.g., y or t).
-                - X[:,2:] = optional parameters for parametric problems.
+                - X[:, 0] = dim1 (e.g., x).
+                - X[:, 1] = dim2 (e.g., y or t).
+                - X[:, 2:] = optional parameters for parametric problems.
 
         Returns
         -------
@@ -229,9 +229,9 @@ class PinnBase(ABC):
                 $\boldsymbol{\hat{u}}_{w}(\mathbf{x}, t; \theta)$.
         X : torch.Tensor                                     
             Input collocation points of shape $(N, 2 + n_{\text{params}})$ where:
-                - X[:,0] = first coordinate (e.g., $x$).
-                - X[:,1] = second coordinate (e.g., $y$ or $t$).
-                - X[:,2:] = optional physical or geometric parameters $\theta$.
+                - X[:, 0] = first coordinate (e.g., $x$).
+                - X[:, 1] = second coordinate (e.g., $y$ or $t$).
+                - X[:, 2:] = optional physical or geometric parameters $\theta$.
             This tensor must have `requires_grad = True` for automatic diff.
 
         Returns
@@ -250,14 +250,14 @@ class PinnBase(ABC):
         stored in the instance.
         """
         train_pinn(
-            pinn_instance = self,
-            model = self.pinn,
-            sampling_fn = self.sampling_fn,
-            domain_kwargs = self.domain_kwargs,
-            epochs = self.epochs,
-            patience = self.patience,
-            optimizer_class = self.optimizer_class,
-            optimizer_kwargs = self.optimizer_kwargs
+            pinn_instance=self,
+            model=self.pinn,
+            sampling_fn=self.sampling_fn,
+            domain_kwargs=self.domain_kwargs,
+            epochs=self.epochs,
+            patience=self.patience,
+            optimizer_class=self.optimizer_class,
+            optimizer_kwargs=self.optimizer_kwargs
         )
 
     def save_checkpoint(self, state: dict, is_best: bool) -> None:

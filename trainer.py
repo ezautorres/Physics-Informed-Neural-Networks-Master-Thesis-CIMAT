@@ -229,10 +229,11 @@ def train_pinn(
             )
         )
 
-        print(
-            f"\n{Style.BRIGHT}--- Total Training Time: "
-            f"{elapsed_time:.2f} seconds ---{Style.RESET_ALL}"
-        )
+    print(
+        f"\n{Style.BRIGHT}--- Total Training Time: "
+        f"{elapsed_time:.2f} seconds ---{Style.RESET_ALL}"
+    )
+
 
 def closure_fn(
     pinn_instance: Callable, model: torch.nn.Module, X: torch.Tensor
