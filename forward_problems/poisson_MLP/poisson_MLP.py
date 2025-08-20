@@ -1,40 +1,77 @@
 """
 poisson_pinn.py
 ---------------
-Instance of a Physics-Informed Neural Network (PINN) applied to the Poisson
-Equation in 2D.
+Physics-Informed Neural Network (PINN) for the two-dimensional Poisson equation.
 
-Author: Ezau Faridh Torres Torres.
-Date: 20 August 2025.
-Institution: Centro de Investigación en Matemáticas (CIMAT).
+Author: Ezau Faridh Torres Torres
+Date: 20 August 2025
+Institution: Centro de Investigación en Matemáticas (CIMAT)
 
 Description
 -----------
-This script solves the Poisson equation using a Physics-Informed Neural Network
-(PINN). The Poisson equation is defined in the unit square domain [0,1]x[0,1]
-with homogeneous Dirichlet boundary conditions.
+Solves the Poisson equation on the unit square domain $[0,1]\times[0,1]$ 
+using a Physics-Informed Neural Network (PINN) with homogeneous Dirichlet 
+boundary conditions.
 
-The PDE to be solved is:
-    $\Delta u = -2\pi^2 \sin(\pi x) sin(\pi y),  for $(x,y) \in (0,1)x(0,1)$.
+Governing PDE:
+$$
+    \Delta u(x,y) = -2\pi^{2}\sin(\pi x)\sin(\pi y), 
+    \quad (x,y)\in(0,1)\times(0,1).
+$$
 
-Subject to boundary conditions:
-    $u(x,0) = 0$,   $u(x,1) = 0$,  
-    $u(0,y) = 0$,   $u(1,y) = 0$
+Boundary conditions:
+$$
+    u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+$$
 
-The exact analytical solution is:
-    $u(x,y) = sin(\pi x) sin(\pi y)$
+Analytical solution:
+$$
+    u(x,y) = \sin(\pi x)\sin(\pi y).
+$$
 
-This implementation includes:
-    - A custom class 'PoissonPinn' inheriting from a general PINN base class.
-    - The definition of the physical loss term and boundary condition loss.
-    - Training and visualization routines.
+Implementation
+--------------
+- Class `PoissonPinn` inheriting from `PinnBase`.
+- Physics-informed loss:
+  - PDE residual $L_\mathrm{pde}$ from the Poisson operator (computed via 
+    automatic differentiation).
+  - Boundary residual $L_\mathrm{bc}$ enforcing Dirichlet constraints.
+- Training with L-BFGS optimizer and strong Wolfe line search.
+- Visualization utilities:
+  - Loss history plots.
+  - Contour and surface plots of the PINN prediction.
+  - Comparison against the analytical solution.
 
 Usage
 -----
-Run the script directly to:
-    - Instantiate and train the PINN for the Poisson problem.
-    - Save and load checkpoints.
-    - Visualize the loss, solution, and comparison with the analytical solution.
+To train the model:
+    $ python poisson_pinn.py
+
+Example (inside the script):
+>>> poisson_pinn = PoissonPinn(
+...     model_class=MLP,
+...     model_kwargs=model_kwargs,
+...     domain_kwargs=domain_kwargs,
+...     optimizer_class=torch.optim.LBFGS,
+...     optimizer_kwargs=optimizer_kwargs,
+...     epochs=150,
+...     patience=10,
+...     sampling_fn=sample_square_uniform,
+...     checkpoint_filename="poisson_MLP.pth"
+... )
+>>> poisson_pinn.train()
+
+To load and visualize:
+>>> poisson_pinn.load_model(load_best=True)
+>>> plot_solution_square(poisson_pinn, domain_kwargs, "solution.png")
+>>> plot_comparison_contour_square(poisson_pinn, domain_kwargs, "comparison.pdf", eps=1e-1)
+
+Notes
+-----
+- Reproducibility ensured via fixed seeds (NumPy, Python, PyTorch).
+- Collocation points sampled uniformly in the unit square.
+- No initial condition is required since the problem is elliptic and fully 
+  determined by the PDE and boundary conditions.
 """
 # Necessary libraries.
 import os                                          # File paths.
@@ -65,7 +102,7 @@ from plotting import (               # Plotting functions.
 from utils import get_model_info     # Model info utility.
 
 class PoissonPinn(PinnBase):
-    def __init__(self, **params):
+    def __init__(self, **params: dict):
         """
         Initializes the PoissonPinn instance using the configuration dictionary
         passed to the base class.
@@ -82,8 +119,8 @@ class PoissonPinn(PinnBase):
 
     def analytical_solution(self, X: torch.Tensor) -> torch.Tensor:
         """
-        Returns the analytical solution u(x,y) = sin(\pi x) sin(\pi y) evaluated
-        at input points X.
+        Returns the analytical solution $u(x,y) = \sin(\pi x) \sin(\pi y)$
+        evaluated at input points X.
 
         Parameters
         ----------
@@ -140,12 +177,12 @@ class PoissonPinn(PinnBase):
         # --------------------------------------------------------------------------
         # Model output for the PDE points.
         u_pde = net(X_pde)
-        
-        # ∇u, grad_u[:,0] = ∂u/∂x, grad_u[:,1] = ∂u/∂y.
+
+        # ∇u, grad_u[:, 0] = ∂u/∂x, grad_u[:, 1] = ∂u/∂y.
         grad_u = torch.autograd.grad(
             u_pde, X_pde, grad_outputs=torch.ones_like(u_pde), create_graph=True
         )[0] 
-        u_x, u_y = grad_u[:,0], grad_u[:,1]
+        u_x, u_y = grad_u[:, 0], grad_u[:, 1]
 
         # ∂²u/∂x².
         u_xx = torch.autograd.grad(
@@ -164,13 +201,13 @@ class PoissonPinn(PinnBase):
             * torch.sin(torch.pi * X_pde[:, 1])
         )
 
-        # Compute the PDE residual loss.
+        # PDE residual loss.
         loss_pde = torch.mean((u_xx + u_yy - f)**2)
 
         # --------------------------------------------------------------------------
         # Boundary condition loss: B[u] = g => u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
         # --------------------------------------------------------------------------
-        # Compute the boundary condition loss.
+        # Boundary condition loss.
         loss_bc = torch.mean(net(X_bc)**2)
 
         # --------------------------------------------------------------------------
@@ -245,6 +282,10 @@ if __name__ == "__main__":
         checkpoint_filename=checkpoint_filename,  # Filename for the checkpoints.
     )
 
+    # ------------------------------------------------------------------------------
+    # Train and plot.
+    # ------------------------------------------------------------------------------
+    
     # Train the model.
     #poisson_pinn.train()
 
@@ -253,22 +294,21 @@ if __name__ == "__main__":
     get_model_info(checkpoint_filename)
     
     # Plot the loss and the solution.
-    #plot_loss(
-    #    model_instance=poisson_pinn, filename="loss_plot.png"
-    #)
+    plot_loss(
+        model_instance=poisson_pinn, filename="loss_plot.pdf"
+    )
 
     # Plot the solution with the best model.
     poisson_pinn.load_model(load_best=True)  # Load the best model.
-    #plot_solution_square(
-    #    model_instance=poisson_pinn,
-    #    domain_kwargs=domain_kwargs,
-    #    filename="solution_plot.png"
-    #)
+    plot_solution_square(
+        model_instance=poisson_pinn,
+        domain_kwargs=domain_kwargs,
+        filename="solution_plot.pdf"
+    )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(
         model_instance=poisson_pinn,
         domain_kwargs=domain_kwargs,
-        filename="comparison_plot2.png",
-        eps=1e-1
+        filename="comparison_plot.png",
     )

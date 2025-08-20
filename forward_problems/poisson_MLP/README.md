@@ -1,20 +1,26 @@
 # Poisson Equation
 
-This experiment solves the 2D Poisson equation on the unit square $\[0,1\]\times\[0,1\]$ using a Physics-Informed Neural Network. This experiment demonstrates how a Physics-Informed Neural Network (PINN) can solve the 2D Poisson equation, showcasing its ability to approximate PDE solutions without labeled data.
+This experiment solves the 2D Poisson equation on the unit square $[0,1]\times[0,1]$ using a Physics-Informed Neural Network. This experiment demonstrates how a Physics-Informed Neural Network (PINN) can solve the 2D Poisson equation, showcasing its ability to approximate PDE solutions without labeled data.
 
 ## Problem Description
 
 The following PDE is solved:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; $\Delta\boldsymbol{u}(x,y) = -2\pi^2 \cdot \sin(\pi x) \cdot \sin(\pi y)$,
+$$
+\Delta \boldsymbol{u}(x,y) = -2\pi^2 \sin(\pi x)\sin(\pi y),
+$$
 
 with homogeneous Dirichlet boundary conditions:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; $\boldsymbol{u}(x,0) = \boldsymbol{u}(x,1) = \boldsymbol{u}(0,y) = \boldsymbol{u}(1,y) = 0$.
+$$
+\boldsymbol{u}(x,0) = \boldsymbol{u}(x,1) = \boldsymbol{u}(0,y) = \boldsymbol{u}(1,y) = 0.
+$$
 
 The analytical solution is:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; $\boldsymbol{u}(x,y) = \sin(\pi x) \cdot \sin(\pi y)$.
+$$
+\boldsymbol{u}(x,y) = \sin(\pi x) \cdot \sin(\pi y).
+$$
         
 ## Model Summary
 
@@ -22,11 +28,12 @@ The analytical solution is:
 |-------------|-----------------------------------------|
 | Network     | MLP with 3 hidden layers (100 neurons)  |
 | Optimizer   | L-BFGS (strong Wolfe line search)       |
-| Activation  | Tanh                                    |
+| Activation  | Tanh (with LayerNorm after each Linear) |
 | Dropout     | 0.01                                    |
-| Domain      | Unit square $\[0,1\]\times\[0,1\]$      |
+| Domain      | Unit square $[0,1]\times[0,1]$          |
 | Collocation | 500 interior, 8000 boundary points      |
 | Loss        | PDE residual + boundary condition loss  |
+| Error       | $4.33\times10^{-6}$ @ epoch 101         |
 
 ## Training Losses
 

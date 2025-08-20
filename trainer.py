@@ -211,7 +211,7 @@ def train_pinn(
                 f"{Style.RESET_ALL}"
             )
             break
-        elif loss_train < 1e-6:
+        elif loss_train < 1e-8:
             tqdm.write(
                 f"{Fore.RED}Loss is too low, stopping training!{Style.RESET_ALL}"
             )

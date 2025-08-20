@@ -23,10 +23,10 @@ plot_solution_square :
 plot_solution_circle :
     Generate 3D surface plots of PINN predictions on a circular domain.
 plot_comparison_contour_square :
-    Compare PINN predictions, analytical solutions, and relative errors
+    Compare PINN predictions, analytical solutions, and absolute errors
     over a square domain using contour plots.
 plot_comparison_contour_circle :
-    Compare PINN predictions, analytical solutions, and relative errors
+    Compare PINN predictions, analytical solutions, and absolute errors
     over a circular domain using contour plots.
 plot_joint_posteriors :
     Plot posterior histograms for parameters from one or two posterior
@@ -441,17 +441,16 @@ def plot_comparison_contour_square(
     filename: str | None = None,
     levels: int = 20,
     ax: plt.Axes | None = None,
-    time_dependent: bool = False,
-    eps: float = 1e-7
+    time_dependent: bool = False
 ) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical
-    solution, and their relative error over a square domain. This function
+    solution, and their absolute error over a square domain. This function
     evaluates both the trained PINN model and the reference analytical
     solution over a structured 2D grid, then generates three contour plots:
         (i) predicted solution,
         (ii) true solution, and
-        (iii) relative error.
+        (iii) absolute error.
 
     Parameters
     ----------
@@ -480,8 +479,6 @@ def plot_comparison_contour_square(
     time_dependent : bool, optional
         If True, labels the vertical axis as time ($t$). Otherwise, labels are
         shown as spatial ($x, y$).
-    eps : float, optional
-        Small value to avoid division by zero in error calculation.
 
     Returns
     -------
@@ -515,7 +512,7 @@ def plot_comparison_contour_square(
                 true = model_instance.analytical_solution(z_input.unsqueeze(0)).cpu()
                 Z_pinn[i, j] = pred
                 Z_true[i, j] = true
-                Z_error[i, j] = torch.abs(pred - true) / (torch.abs(true) + eps)
+                Z_error[i, j] = torch.abs(pred - true)
 
     # Shared scale for solution plots.
     vmin = min(Z_pinn.min(), Z_true.min()).item()
@@ -543,9 +540,9 @@ def plot_comparison_contour_square(
     axes[1].set_aspect("equal")
     axes[1].tick_params(axis="both", labelsize=18)
 
-    # Absolute relative error.
+    # Absolute error.
     cs3 = axes[2].contourf(grid_1, grid_2, Z_error, levels=levels)
-    axes[2].set_title("Relative Error", fontsize=20, fontweight="bold")
+    axes[2].set_title("Absolute Error", fontsize=20, fontweight="bold")
     axes[2].set_aspect("equal")
     axes[2].tick_params(axis="both", labelsize=18)
 
@@ -562,7 +559,7 @@ def plot_comparison_contour_square(
 
     # Colorbar for error plot (right).
     cbar_ax2 = fig.add_axes([0.92, 0.15, 0.015, 0.30])
-    fig.colorbar(cs3, cax=cbar_ax2).set_label("Relative Error", fontsize=15)
+    fig.colorbar(cs3, cax=cbar_ax2).set_label("Absolute Error", fontsize=15)
 
     # Save/show plot.
     if filename:
@@ -580,18 +577,17 @@ def plot_comparison_contour_circle(
     filename: str | None = None,
     levels: int = 20,
     ax: plt.Axes | None = None,
-    time_dependent: bool = False,
-    eps: float = 1e-7
+    time_dependent: bool = False
 ) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical
-    solution, and their relative error over a circular domain. This function
+    solution, and their absolute error over a circular domain. This function
     evaluates both the trained PINN model and the reference analytical solution
     over a structured 2D grid that covers the bounding box of a circular domain.
     Three contour plots are generated:
         (i) predicted solution,
         (ii) true solution, and
-        (iii) relative error.
+        (iii) absolute error.
 
     Parameters
     ----------
@@ -616,8 +612,6 @@ def plot_comparison_contour_circle(
     time_dependent : bool, optional
         If True, labels the vertical axis as time ($t$). Otherwise, labels are
         shown as spatial ($x, y$).
-    eps : float, optional
-        Small value to avoid division by zero in error calculation.
 
     Returns
     -------
@@ -657,7 +651,7 @@ def plot_comparison_contour_circle(
                     ).cpu()
                     Z_pinn[i, j] = pred
                     Z_true[i, j] = true
-                    Z_error[i, j] = torch.abs(pred - true)/ (torch.abs(true) + eps)
+                    Z_error[i, j] = torch.abs(pred - true)
 
     # Shared scale for solution plots.
     #vmin = min(
@@ -693,9 +687,9 @@ def plot_comparison_contour_circle(
     axes[1].set_aspect("equal")
     axes[1].tick_params(axis="both", labelsize=18)
 
-    # Relative error.
+    # Absolute error.
     cs3 = axes[2].contourf(grid_1, grid_2, Z_error, levels=levels)
-    axes[2].set_title("Relative Error", fontsize=20, fontweight="bold")
+    axes[2].set_title("Absolute Error", fontsize=20, fontweight="bold")
     axes[2].set_aspect("equal")
     axes[2].tick_params(axis="both", labelsize=18)
 
@@ -709,7 +703,7 @@ def plot_comparison_contour_circle(
 
     # Colorbar for error plot (right).
     cbar_ax2 = fig.add_axes([0.92, 0.15, 0.015, 0.30])
-    fig.colorbar(cs3, cax=cbar_ax2).set_label("Relative Error", fontsize=15)
+    fig.colorbar(cs3, cax=cbar_ax2).set_label("Absolute Error", fontsize=15)
 
     # Save/show plot.
     if filename:
