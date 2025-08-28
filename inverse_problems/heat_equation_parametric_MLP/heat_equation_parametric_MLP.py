@@ -364,7 +364,7 @@ if __name__ == "__main__":
         domain_kwargs=domain_kwargs,
         filename="solution_plot_test1.png",
         time_dependent=True,
-        parameters=[n, alpha_test1]
+        parameters=[n, alpha_test1],
     )
 
     plot_comparison_contour_square(

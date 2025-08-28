@@ -2,7 +2,7 @@
 infer_conductivity_value_MLP.py
 -------------------------------
 Parametric Physics-Informed Neural Network (PINN) for the Conductivity
-Equation in the Unit Disk.
+Equation in the Unit Disk (parameter \rho).
 
 Author: Ezau Faridh Torres Torres.
 Date: 25 August 2025.
@@ -12,8 +12,8 @@ Description
 -----------
 Trains a Physics-Informed Neural Network (PINN) to approximate the solution of a
 conductivity problem in the unit disk, where the conductivity depends on two
-parameters: $R$ (interface radius) and $\rho$ (contrast). The conductivity is
-piecewise defined as:
+parameters: fixed $R$ (interface radius) and a variable $\rho$ (contrast). The
+conductivity is piecewise defined as:
 
 $$
 \lambda(x) =
@@ -184,8 +184,8 @@ class InferringConductivityValue(PinnBase):
             Coefficients b and c.
         """
         denom = 8 * (rho * R**8 + rho + 2)
-        bn = ((rho + 2) * R**4) / denom    # Coefficient b.
-        cn = - (rho * R**4) / denom        # Coefficient c.
+        bn = ((rho + 2) * R**4) / denom  # Coefficient b.
+        cn = - (rho * R**4) / denom  # Coefficient c.
 
         return bn, cn
 
@@ -360,10 +360,10 @@ if __name__ == "__main__":
     # Domain and model parameters.
     # ------------------------------------------------------------------------------
     R = 0.85
-    param_supp = (0.,10.)
+    param_supp = [(0., 10.)]
     domain_kwargs = {
         # Domain parameters.
-        'center': [0,0],
+        'center': [0, 0],
         'radius': 1,
         # Collocation points.
         'interiorSize': 2700,
@@ -371,8 +371,8 @@ if __name__ == "__main__":
         'auxiliarySize': 3000,
         'valSize': 2500,
         # Parameters for the PINN.
-        'fixed_params': [R],  # Fixed parameter R.
-        'param_domains': [param_supp],  # Parameter domains for ⍴.
+        'fixed_params': [R],  # Fixed R.
+        'param_domains': param_supp,  # Domain for ⍴.
         # Observed data.
         'data_x': None,
         'data_u': None,
@@ -449,8 +449,10 @@ if __name__ == "__main__":
     # Review boundary conditions
     with torch.no_grad():
         theta = torch.linspace(0, 2*np.pi, 2000, device=device)
-        X_boundary = torch.stack([torch.cos(theta), torch.sin(theta),
-                                  torch.full_like(theta, R),
-                                  torch.full_like(theta, rho)], dim=1)
+        X_boundary = torch.stack(
+            [torch.cos(theta), torch.sin(theta),
+             torch.full_like(theta, R),
+             torch.full_like(theta, rho)], dim=1
+        )
         u_boundary = infer_rho_pinn.pinn(X_boundary)
         print("Mean on boundary:", u_boundary.mean().item())

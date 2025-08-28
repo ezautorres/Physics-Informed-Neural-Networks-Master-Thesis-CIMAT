@@ -1,3 +1,83 @@
+"""
+advection_diffusion_mcmc.py
+---------------------------
+Bayesian Inference with MCMC for the 1D Advection-Diffusion Equation using PINNs.
+
+Author: Ezau Faridh Torres Torres.
+Date: 25 August 2025.
+Institution: Centro de Investigación en Matemáticas (CIMAT).
+
+Description
+-----------
+Performs Bayesian parameter inference for the 1D advection-diffusion equation
+using Markov Chain Monte Carlo (MCMC) with Bayesian Uncertainty Quantification
+(BUQ). Both the analytical solution and a trained Physics-Informed Neural 
+Network (PINN) surrogate are used as forward models for comparison.
+
+The PDE is:
+$$
+    u_{t}(x,t) - \alpha u_{xx}(x,t) + \beta u_{x}(x,t) = 0, 
+    \quad (x,t)\in(0,L)\times(0,T).
+$$
+
+Boundary conditions:
+$$
+    u(0,t) = u(L,t) = 0, \quad t\in[0,T].
+$$
+
+Initial condition:
+$$
+    u(x,0) = \sin\left(\frac{n \pi x}{L}\right) 
+             \exp\left(\frac{\beta x}{2\alpha}\right), \quad x\in[0,L].
+$$
+
+Analytical solution:
+$$
+    u(x,t) = \sin\left(\frac{n \pi x}{L}\right)
+             \exp\left(-t\Big(\tfrac{\alpha n^{2}\pi^{2}}{L^{2}}
+             + \tfrac{\beta^{2}}{4\alpha}\Big)\right)
+             \exp\left(\tfrac{\beta x}{2\alpha}\right).
+$$
+
+Implementation
+--------------
+- Loads a pre-trained `AdvectionDiffusionPinn` model.
+- Synthetic data are generated from the analytical solution with Gaussian noise.
+- Two forward maps are defined:
+  - Analytical closed-form solution.
+  - PINN surrogate model prediction.
+- Runs MCMC via the `MCMCInference` function:
+  - Priors: $\alpha \sim U(0.02,0.12)$, $\beta \sim U(-0.15,0.10)$.
+  - Likelihood: Gaussian with $\sigma=0.01$.
+  - True parameters: $(\alpha, \beta) = (0.06, -0.05)$.
+- Posterior samples are stored as CSV and reused if available.
+
+Visualization
+-------------
+- Joint posterior histograms comparing analytical vs PINN inference for 
+  each parameter.
+- Corner plot for joint posterior comparison.
+
+Usage
+-----
+To run the inference:
+    $ python advection_diffusion_mcmc.py
+
+Example output files:
+- `"samples_analytical.csv"` : Posterior samples using analytical solution.
+- `"samples_pinn.csv"`       : Posterior samples using PINN surrogate.
+- `"posterior_alpha.png"`    : Posterior distribution of $\alpha$.
+- `"posterior_beta.png"`     : Posterior distribution of $\beta$.
+- `"corner_comparison.png"`  : Joint posterior corner plot.
+
+Notes
+-----
+- Reproducibility ensured via fixed random seeds (NumPy, Python, PyTorch).
+- Uses **t-walk MCMC** (`BUQ` sampler) for posterior sampling.
+- The PINN surrogate allows inference when the analytical solution is unknown.
+- The comparison highlights how close the PINN-based posterior is to the
+  analytical posterior.
+"""
 # Necessary libraries.
 import os                                          # File paths.
 import sys                                         # System functions.

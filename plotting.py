@@ -174,7 +174,7 @@ def plot_loss(
         )
 
     # Labels and styling.
-    ax.set_xlabel("Epochs", fontsize=22)
+    ax.set_xlabel("Epoch", fontsize=22)
     ax.set_ylabel("Loss", fontsize=22)
     ax.set_yscale("log")
     ax.tick_params(axis="both", labelsize=20)

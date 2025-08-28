@@ -24,18 +24,18 @@ $$
         
 ## Model Summary
 
-| Component    | Choice                                  |
-|--------------|-----------------------------------------|
-| Network      | MLP with 3 hidden layers (100 neurons)  |
-| Optimizer    | L-BFGS (strong Wolfe line search)       |
-| Activation   | Tanh (with LayerNorm after each Linear) |
-| Dropout      | 0.01                                    |
-| Domain       | Unit square $\Omega=[0,1]\times[0,1]$   |
-| Collocation  | 500 interior, 8000 boundary points      |
-| Loss         | PDE residual + boundary condition loss  |
-| Weights used | $\lambda_{pde} = \lambda_{bc} = 1.0$    | 
-| Error        | $1\times10^{-6}$ @ epoch 881            |
-| Time         | 1131.58 s                               |
+| Component    | Choice                                                |
+|--------------|-------------------------------------------------------|
+| Network      | MLP with 3 hidden layers (100 neurons)                |
+| Optimizer    | L-BFGS (strong Wolfe line search)                     |
+| Activation   | Tanh (with LayerNorm after each Linear)               |
+| Dropout      | 0.01                                                  |
+| Domain       | Unit square $\Omega=[0,1]\times[0,1]$                 |
+| Collocation  | 500 interior, 8000 boundary points (@ 2000 each side) |
+| Loss         | PDE residual + boundary condition loss                |
+| Weights used | $\lambda_{pde} = \lambda_{bc} = 1.0$                  | 
+| Error        | $1\times10^{-6}$ @ epoch 881                          |
+| Time         | 1131.58 s                                             |
 
 ## Training Losses
 

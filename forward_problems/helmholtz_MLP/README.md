@@ -34,7 +34,7 @@ $$
 | Collocation  | 1200 interior, 1600 boundary @ 400 each      |
 | Loss         | PDE residual + boundary condition loss       |
 | Weights used | $\lambda_{pde} = \lambda_{bc} = 1.0$         | 
-| Error        | $3.85\times 10^{2}$ @ epoch                  |
+| Error        | $3.85\times 10^{2}$ @ epoch 86               |
 | Time         | 24985.46 s                                   |
 
 ## Training Losses

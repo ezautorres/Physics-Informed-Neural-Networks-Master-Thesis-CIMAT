@@ -350,4 +350,5 @@ if __name__ == "__main__":
         domain_kwargs=domain_kwargs,
         filename="comparison_plot.png",
         parameters=[k],
+        adjust_scale=True
     )

@@ -355,8 +355,7 @@ if __name__ == "__main__":
         domain_kwargs=domain_kwargs,
         parameters=[c],
         filename="solution_plot.png",
-        time_dependent=True,
-        adjust_zlim=True
+        time_dependent=True
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.

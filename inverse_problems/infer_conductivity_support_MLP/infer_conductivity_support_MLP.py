@@ -359,7 +359,7 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------------------
     # Domain and model parameters.
     # ------------------------------------------------------------------------------
-    rho = [6]
+    rho = 6
     param_supp = [(0., 1.)]
     domain_kwargs = {
         # Domain parameters.
@@ -371,7 +371,7 @@ if __name__ == "__main__":
         'auxiliarySize': 3000,
         'valSize': 1500,
         # Parameters for the PINN.
-        'fixed_params': rho,  # Fixed ⍴.
+        'fixed_params': [rho],  # Fixed ⍴.
         'param_domains': param_supp,  # Domain for R.
         # Observed data.
         'data_x': None,
@@ -416,7 +416,7 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------------------
     # Train and plot.
     # ------------------------------------------------------------------------------
-    infer_R_pinn.train()  # Uncomment to train the model.
+    # infer_R_pinn.train()  # Uncomment to train the model.
 
     # Load the complete model and print model information.
     infer_R_pinn.load_model(load_best=False)
@@ -424,7 +424,7 @@ if __name__ == "__main__":
 
     # Plot the loss and the solution.
     plot_loss(
-        model_instance=infer_R_pinn, filename="loss_plot.pdf", ic=False
+        model_instance=infer_R_pinn, filename="loss_plot.png", ic=False
     )
 
     # Plot the solution with the best model.
@@ -434,7 +434,7 @@ if __name__ == "__main__":
         model_instance=infer_R_pinn,
         domain_kwargs=domain_kwargs,
         parameters=[rho, R],
-        filename="solution_plot.pdf"
+        filename="solution_plot.png"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
@@ -442,7 +442,7 @@ if __name__ == "__main__":
         model_instance=infer_R_pinn,
         domain_kwargs=domain_kwargs,
         parameters=[rho, R],
-        filename="comparison_plot.pdf"
+        filename="comparison_plot.png"
     )
 
     # Review boundary conditions

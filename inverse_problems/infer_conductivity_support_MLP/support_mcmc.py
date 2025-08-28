@@ -1,171 +1,214 @@
 """
-heat_run_mcmc.py
--------------------------------------
-Bayesian parameter inference for the 1D Heat Equation using Physics-Informed Neural Networks (PINNs) 
-and analytical solutions as forward models.
+support_mcmc.py
+----------------------------------
+Bayesian Inference with MCMC for the Support Radius in the Conductivity Problem 
+of the Unit Disk using PINNs.
 
 Author: Ezau Faridh Torres Torres.
-Date: 7 August 2025.
+Date: 25 August 2025.
 Institution: Centro de Investigación en Matemáticas (CIMAT).
 
 Description
 -----------
-This script performs Bayesian inference to estimate unknown physical parameters of the 1D Heat Equation,
-leveraging both a trained Physics-Informed Neural Network (PINN) and the corresponding analytical solution 
-as forward models. The problem setup assumes a parametric formulation where fixed parameters (e.g., mode 
-number `n`) and unknown parameters (e.g., thermal diffusivity `⍺`) are incorporated into the forward map.
+Performs Bayesian parameter inference for the conductivity problem in the
+unit disk using Markov Chain Monte Carlo (MCMC) with Bayesian Uncertainty
+Quantification (BUQ). Both the analytical solution and a trained 
+Physics-Informed Neural Network (PINN) surrogate are used as forward models 
+for comparison.
 
-The workflow includes:
-    - Loading a pre-trained parametric PINN model for the heat equation.
-    - Defining the prior distribution and support for the parameters of interest.
-    - Generating synthetic measurement data with optional Gaussian noise.
-    - Defining forward maps for both analytical and PINN-based solutions.
-    - Running Markov Chain Monte Carlo (MCMC) sampling using the t-walk algorithm to estimate posterior distributions.
-    - Saving MCMC samples to CSV files for reproducibility.
-    - Plotting joint posterior distributions for direct comparison between analytical and PINN-based inference.
+The PDE is:
+$$
+    \nabla \cdot (\lambda(x,y; R, \rho) \nabla u(x,y)) = 0, 
+    \quad (x,y)\in \Omega \subset \mathbb{R}^2,
+$$
+with piecewise conductivity:
+$$
+    \lambda(r) = 
+    \begin{cases}
+        1 + \rho, & r < R, \\
+        1, & r \geq R,
+    \end{cases}
+$$
+where $r = \sqrt{x^2+y^2}$.
 
-Functions and Utilities
------------------------
-generate_synthetic_data :
-    Generates noisy synthetic data points given spatial/temporal domains, fixed parameters, 
-    true parameters, and a forward model.
-define_forward_map :
-    Wraps a PINN instance or analytical solution into a callable function for MCMC evaluation.
-MCMCInference :
-    Performs Bayesian sampling using the t-walk algorithm, returning posterior samples and statistics.
-plot_joint_posteriors :
-    Generates comparative posterior plots for two sets of MCMC results.
+Boundary condition:
+$$
+    \lambda \frac{\partial u}{\partial n} = \cos(4\theta), \quad (x,y)\in \partial\Omega,
+$$
+with $\theta = \arctan(y/x)$.
+
+Analytical solution (polar form):
+$$
+    u(r,\theta) =
+    \begin{cases}
+        2(b+c)\,(r/R)^4 \cos(4\theta), & r < R, \\
+        2\big(b\,(r/R)^4 + c\,(r/R)^{-4}\big)\cos(4\theta), & r \geq R,
+    \end{cases}
+$$
+with coefficients $b, c$ depending on $\rho, R$.
+
+Implementation
+--------------
+- Loads a pre-trained `InferringConductivitySupport` PINN model.
+- Synthetic noisy boundary data are generated.
+- Two forward maps are defined:
+  - Analytical closed-form solution.
+  - PINN surrogate model prediction.
+- Runs MCMC via the `MCMCInference` function:
+  - Prior: $R \sim U(0,1)$.
+  - Likelihood: Gaussian with $\sigma=0.01$.
+  - True parameter: $R = 0.725$, with fixed $\rho = 6$.
+- Posterior samples are stored as CSV and reused if available.
+
+Visualization
+-------------
+- Posterior distribution of $R$ (analytical vs PINN).
 
 Usage
 -----
->>> # Generate synthetic data from the analytical solution
->>> data_x, data_u_exact, data_u = generate_synthetic_data(
-...     dim1_min=0, dim1_max=L, dim2_min=0, dim2_max=T, n_points=20,
-...     pinn_instance=infer_R_pinn, fixed_params=[n], par_true=[par_true], sigma=0.01
-... )
->>> # Define forward maps
->>> analytical_forward_map = lambda theta, t: define_forward_map(theta, t, pinn_instance=infer_R_pinn, analytic=True)
->>> pinn_forward_map = lambda theta, t: define_forward_map(theta, t, pinn_instance=infer_R_pinn, analytic=False)
->>> # Run MCMC inference
->>> samples_analytical, stats_analytical = MCMCInference(
-...     filename="samples_analytical.csv", forward_map=analytical_forward_map,
-...     data_x=data_x, data_u=data_u, par_names=[r"$\\alpha$"], par_prior=par_prior,
-...     par_supp=par_supp, par_true=par_true, sigma=0.01, n_iter=100000, burn_in=10000
-... )
+To run the inference:
+    $ python mcmc_infer_conductivity_support.py
 
-References
-----------
-- Raissi, M., Perdikaris, P., & Karniadakis, G. E. (2019). Physics-informed neural networks: A deep 
-    learning framework for solving forward and inverse problems involving nonlinear partial differential 
-    equations. *Journal of Computational Physics*, 378, 686-707.
-- Christen, J. A., & Fox, C. (2010). A general purpose sampling algorithm for continuous distributions 
-    (the t-walk). *Bayesian Analysis*, 5(2), 263-281.
-- https://github.com/carlosrtf/twalk
+Example output files:
+- `"samples_analytical.csv"` : Posterior samples using analytical solution.
+- `"samples_pinn.csv"`       : Posterior samples using PINN surrogate.
+- `"posterior_comparison.png"` : Posterior distribution of $R$.
+
+Notes
+-----
+- Reproducibility ensured via fixed random seeds (NumPy, Python, PyTorch).
+- Uses **t-walk MCMC** (`BUQ` sampler) for posterior sampling.
+- PINN surrogate enables parameter inference in cases where the analytical
+  solution is unavailable.
 """
-import numpy as np                                                                 # Numpy library.
-import torch                                                                       # Import PyTorch
-import sys, os                                                                     # Import sys and os modules.
-import random                                                                      # Random module for reproducibility.
-import scipy.stats as stats                                                        # Import scipy.stats for statistical functions.
-np.set_printoptions(precision = 17, suppress = False)                              # Set print options for numpy.
-np.random.seed(0)                                                                  # Seed for reproducibility.
-random.seed(0)                                                                     # Seed for reproducibility.
-torch.manual_seed(0)                                                               # Seed for reproducibility.
-torch.backends.cudnn.benchmark = False                                             # Reproducibility for CUDA.
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")              # Set device to GPU if available, else CPU.
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))) # Add the parent directory to the path.
-from inference.mcmc import MCMCInference                                           # Import MCMC inference class and utility function.
-from inference.mcmc import define_forward_map                                      # Import forward map definition utility.
-from utils import get_model_info, load_full_model                                  # Import utility functions.
-from plotting import plot_joint_posteriors                                         # Import plotting function.
-from sampling import generate_synthetic_data_on_circle_boundary                    # Import synthetic data generation utility.
-from inverse_problems.infer_conductivity_support_MLP.infer_conductivity_support_MLP import InferringConductivitySupport # Import the PINN model class.
+# Necessary libraries.
+import os                                          # File paths.
+import sys                                         # System functions.
+import random                                      # Random numbers.
+import numpy as np                                 # Arrays and math.
+import torch                                       # Tensors and autograd.
+import scipy.stats as stats                        # Statistical distributions.
+np.set_printoptions(precision=17, suppress=False)  # NumPy printing precision.
+np.random.seed(0)                                  # NumPy random seed.
+random.seed(0)                                     # Python random seed.
+torch.manual_seed(0)                               # PyTorch random seed.
+torch.backends.cudnn.benchmark = False             # Disable CuDNN auto-tuner.
+device = torch.device(                             # Select GPU if available.
+    "cuda" if torch.cuda.is_available() else "cpu"
+)  
 
-# ------------------------------------------------------------------------------------------------------
+# Project root and utils.
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+)
+
+# Project imports.
+from utils import load_full_model, get_model_info
+from sampling import generate_synthetic_data_on_circle_boundary
+from inference.mcmc import MCMCInference, define_forward_map
+from plotting import plot_joint_posteriors
+from inverse_problems.infer_conductivity_support_MLP.infer_conductivity_support_MLP import InferringConductivitySupport
+
+# ----------------------------------------------------------------------------------
 # Load the trained PINN model for parameter inference.
-# ------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 checkpoint_filename = "infer_conductivity_support_MLP.pth"
 infer_R_pinn = load_full_model(
-    checkpoint_path = os.path.join("trained_models", checkpoint_filename),
-    model_class     = InferringConductivitySupport)
-get_model_info(checkpoint_filename) # Print model information.
+    checkpoint_path=os.path.join("trained_models", checkpoint_filename),
+    model_class=InferringConductivitySupport
+)
+get_model_info(checkpoint_filename)  # Print model information.
 
-# ------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # Parameters for MCMC inference.
-# ------------------------------------------------------------------------------------------------------ 
-rho       = 6                       # Rho value.
-par_true  = 0.725                   # True value of the parameters to be inferred.
-par_names = [r"$R$"]                # Name of the parameters to be inferred.
-par_prior = [stats.uniform(0,1)]    # Prior distribution for the parameters.
-par_supp  = [lambda R: 0 <= R <= 1] # Support function for the prior distributions.
-sigma     = 0.01                    # Standard deviation for the noise in the data.
-n_iter    = 100000                  # Number of MCMC iterations.
-burn_in   = int(0.1 * n_iter)       # Burn-in period.
+# ----------------------------------------------------------------------------------
+rho = [6]  # 𝛒.
+par_true = [0.725]  # True value to be inferred.
+par_names = [r"$R$"]  # Name of the parameters to be inferred.
+par_prior = [stats.uniform(0, 1)]  # Prior distribution for R ~ U(0, 1).
+par_supp = [lambda R: 0 <= R <= 1]  # Support function for the prior.
+sigma = 0.01  # Standard deviation for the noise.
+n_iter = 500000  # Iterations.
+burn_in = int(0.1 * n_iter)  # Burn-in.
 
-# ------------------------------------------------------------------------------------------------------
-# Data and forward map definition.
-# ------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
+# Synthetic data generation and forward map definition.
+# ----------------------------------------------------------------------------------
 n_points = 50  # Number of data points to generate.
 data_x, data_u_exact, data_u = generate_synthetic_data_on_circle_boundary(
-    center = (0.0, 0.0), radius = 1.0, n_points = n_points, pinn_instance = infer_R_pinn,
-    fixed_params = [rho], par_true = [par_true], sigma = sigma
-    )
+    center=(0.0, 0.0),
+    radius=1.0,
+    n_points=n_points,
+    pinn_instance=infer_R_pinn,
+    fixed_params=rho,
+    par_true=par_true,
+    sigma=sigma
+)
 
 # Define the forward maps for the analytical and PINN solutions.
-analytical_forward_map = lambda theta, t: define_forward_map( # Analytical forward map.
-    theta, t, pinn_instance = infer_R_pinn, analytic = True)
-pinn_forward_map       = lambda theta, t: define_forward_map( # PINN forward map.
-    theta, t, pinn_instance = infer_R_pinn, analytic = False)
+analytical_forward_map = lambda theta, t: define_forward_map(
+    theta, t, pinn_instance=infer_R_pinn, analytic=True
+)
+pinn_forward_map = lambda theta, t: define_forward_map(
+    theta, t, pinn_instance=infer_R_pinn, analytic=False
+)
 
-# ------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # File paths for saving/loading MCMC samples.
-# ------------------------------------------------------------------------------------------------------
-script_dir = os.path.dirname(os.path.abspath(sys.modules["__main__"].__file__)) # Directory of the running script.
-analytical_csv_path = os.path.join(script_dir, "samples_analytical.csv")        # CSV file for analytical samples.
-pinn_csv_path = os.path.join(script_dir, "samples_pinn.csv")                    # CSV file for PINN samples.
+# ----------------------------------------------------------------------------------
+# Directory of the running script.
+script_dir = os.path.dirname(
+    os.path.abspath(sys.modules["__main__"].__file__)
+)
 
-# ------------------------------------------------------------------------------------------------------
-# Run MCMC inference 
-# ------------------------------------------------------------------------------------------------------
+# CSV file for analytical samples.
+analytical_csv_path = os.path.join(script_dir, "samples_analytical.csv")
+
+# CSV file for PINN samples.
+pinn_csv_path = os.path.join(script_dir, "samples_pinn.csv")
+
+# ----------------------------------------------------------------------------------
+# Run MCMC inference
+# ----------------------------------------------------------------------------------
 print("\n" + "─"*60 + "\nAnalytical Forward Map\n" + "─"*60)
 samples_analytical, stats_analytical = MCMCInference(
-    filename    = analytical_csv_path,
-    forward_map = analytical_forward_map,
-    data_x      = data_x,
-    data_u      = data_u,
-    par_names   = par_names,
-    par_prior   = par_prior,
-    par_supp    = par_supp,
-    par_true    = par_true,
-    sigma       = sigma,
-    n_iter      = n_iter,
-    burn_in     = burn_in,
-    SimData     = False
+    filename=analytical_csv_path,
+    forward_map=analytical_forward_map,
+    data_x=data_x,
+    data_u=data_u,
+    par_names=par_names,
+    par_prior=par_prior,
+    par_supp=par_supp,
+    par_true=par_true,
+    sigma=sigma,
+    n_iter=n_iter,
+    burn_in=burn_in,
+    SimData=False
 )
 print("\n" + "─"*60 + "\nPINN Forward Map\n" + "─"*60)
 samples_pinn, stats_pinn = MCMCInference(
-    filename    = pinn_csv_path,
-    forward_map = pinn_forward_map,
-    data_x      = data_x,
-    data_u      = data_u,
-    par_names   = par_names,
-    par_prior   = par_prior,
-    par_supp    = par_supp,
-    par_true    = par_true,
-    sigma       = sigma,
-    n_iter      = n_iter,
-    burn_in     = burn_in,
+    filename=pinn_csv_path,
+    forward_map=pinn_forward_map,
+    data_x=data_x,
+    data_u=data_u,
+    par_names=par_names,
+    par_prior=par_prior,
+    par_supp=par_supp,
+    par_true=par_true,
+    sigma=sigma,
+    n_iter=n_iter,
+    burn_in=burn_in
 )
 
-# ------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # Plot joint posterior distributions.
-# ------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 plot_joint_posteriors(
-    samples1  = samples_analytical["samples"],
-    samples2  = samples_pinn["samples"],
-    par_true  = par_true,          # puede ser escalar o [par_true]
-    par_names = r"$R$",         # o ["$\\rho$"]
-    bins      = 30,
-    filename  = "posterior_comparison.pdf",
-    param_idx = 0,                 # <<<<<< clave
+    samples1=samples_analytical["samples"],
+    samples2=samples_pinn["samples"],
+    par_true=par_true,
+    par_names=par_names,
+    bins=30,
+    filename="posterior_comparison.png",
+    param_idx=0,
 )

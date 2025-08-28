@@ -1,3 +1,88 @@
+"""
+value_mcmc.py
+--------------------------
+Bayesian Inference with MCMC for the Conductivity Problem in the Unit Disk
+using PINNs.
+
+Author: Ezau Faridh Torres Torres.
+Date: 25 August 2025.
+Institution: Centro de Investigación en Matemáticas (CIMAT).
+
+Description
+-----------
+Performs Bayesian parameter inference for the conductivity problem in the
+unit disk using Markov Chain Monte Carlo (MCMC) with Bayesian Uncertainty
+Quantification (BUQ). Both the analytical solution and a trained 
+Physics-Informed Neural Network (PINN) surrogate are used as forward models 
+for comparison.
+
+The PDE is:
+$$
+    \nabla \cdot (\lambda(x,y; R, \rho) \nabla u(x,y)) = 0, 
+    \quad (x,y)\in \Omega \subset \mathbb{R}^2,
+$$
+with piecewise conductivity:
+$$
+    \lambda(r) = 
+    \begin{cases}
+        1 + \rho, & r < R, \\
+        1, & r \geq R,
+    \end{cases}
+$$
+where $r = \sqrt{x^2+y^2}$.
+
+Boundary condition:
+$$
+    \lambda \frac{\partial u}{\partial n} = \cos(4\theta),
+    \quad (x,y)\in \partial\Omega,
+$$
+with $\theta = \arctan(y/x)$.
+
+Analytical solution (polar form):
+$$
+    u(r,\theta) =
+    \begin{cases}
+        2(b+c)\,(r/R)^4 \cos(4\theta), & r < R, \\
+        2\big(b\,(r/R)^4 + c\,(r/R)^{-4}\big)\cos(4\theta), & r \geq R,
+    \end{cases}
+$$
+with coefficients $b, c$ depending on $\rho, R$.
+
+Implementation
+--------------
+- Loads a pre-trained `InferringConductivityValue` PINN model.
+- Synthetic boundary data are generated with Gaussian noise.
+- Two forward maps are defined:
+  - Analytical closed-form solution.
+  - PINN surrogate model prediction.
+- Runs MCMC via the `MCMCInference` function:
+  - Prior: $\rho \sim U(0,10)$.
+  - Likelihood: Gaussian with $\sigma=0.01$.
+  - True parameter: $\rho = 3.2$, fixed $R=0.85$.
+- Posterior samples are stored as CSV and reused if available.
+
+Visualization
+-------------
+- Posterior distribution of $\rho$ (analytical vs PINN).
+- Joint posterior plot for comparison.
+
+Usage
+-----
+To run the inference:
+    $ python value_mcmc.py
+
+Example output files:
+- `"samples_analytical.csv"` : Posterior samples using analytical solution.
+- `"samples_pinn.csv"`       : Posterior samples using PINN surrogate.
+- `"posterior_comparison.png"` : Posterior distribution of $\rho$.
+
+Notes
+-----
+- Reproducibility ensured via fixed random seeds (NumPy, Python, PyTorch).
+- Uses **t-walk MCMC** (`BUQ` sampler) for posterior sampling.
+- PINN surrogate enables parameter inference in cases where the analytical
+  solution is unavailable.
+"""
 # Necessary libraries.
 import os                                          # File paths.
 import sys                                         # System functions.
@@ -39,10 +124,10 @@ get_model_info(checkpoint_filename)  # Print model information.
 # ----------------------------------------------------------------------------------
 # Parameters for MCMC inference.
 # ----------------------------------------------------------------------------------
-R = 0.85  # Radius of the circular domain.
+R = [0.85]  # Radius of the circular domain.
 par_true = [3.2]  # True value to be inferred.
 par_names = [r"$\rho$"]  # Name of the parameters to be inferred.
-par_prior = [stats.uniform(0,10)]  # Prior distribution 𝞺 ~ U(0, 10).
+par_prior = [stats.uniform(0, 10)]  # Prior distribution for 𝞺 ~ U(0, 10).
 par_supp = [lambda p: 0 <= p <= 10]  # Support function for the prior.
 sigma = 0.01  # Standard deviation for the noise.
 n_iter = 500000  # Iterations.
@@ -57,7 +142,7 @@ data_x, data_u_exact, data_u = generate_synthetic_data_on_circle_boundary(
     radius=1.0,
     n_points=n_points,
     pinn_instance=infer_rho_pinn,
-    fixed_params=[R],
+    fixed_params=R,
     par_true=par_true,
     sigma=sigma
 )

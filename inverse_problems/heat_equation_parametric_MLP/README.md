@@ -26,7 +26,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,t) = \sin\left(\frac{n \pi x}{L}\right) \cdot \exp\left(-\alpha t\frac{n^2\pi^2}{L^2}\right).
+\boldsymbol{u}(x,t) = \sin\left(\frac{n \pi x}{L}\right) \cdot \exp\left(-\alpha t\left(\frac{n\pi}{L}\right^2\right).
 $$
         
 ## Model Summary for $\alpha\in[0,0.1],\ n=5,\ L=T=2$
@@ -41,7 +41,7 @@ $$
 | Collocation  | 15000 interior; 4000 boundary (2000 @ $x=0$, 2000 @ $x=L$); 2000 initial |
 | Loss         | PDE residual + boundary condition loss + initial condition loss          |
 | Weights used | $\lambda_{pde} = \lambda_{bc} = \lambda_{ic} = 1.0$                      | 
-| Error        | $1.12\times10^{-2}$                                                      |
+| Error        | $1.12\times10^{-2}$ @ epoch 1370                                         |
 | Time         | 9217.76 s                                                                |
 
 ### Training Losses
@@ -78,16 +78,14 @@ $$
 
 | Metric                   | PINN                   | Analytical Solution    |
 |--------------------------|------------------------|------------------------|
-| **Mean**                 | `0.049838`             | `0.050962`             |
-| **Median**               | `0.049788`             | `0.050963`             |
-| **Mode**                 | `0.046085`             | `0.055849`             |
-| **Std**                  | `0.001518`             | `0.001655`             |
-| **Conf. Interval (95%)** | `[0.048320, 0.051357]` | `[0.049307, 0.052617]` |
-| **16th Percentile**      | `0.048335`             | `0.049330`             |
-| **84th Percentile**      | `0.051348`             | `0.052612`             |
-| **Execution time**       | `72.22 s`              | `97.25 s`              |
-
-Comparison of posterior statistics obtained with the PINN surrogate model vs. the analytical solution.
+| **Mean**                 | `0.050962`             | `0.049838`             |
+| **Median**               | `0.050963`             | `0.049788`             |
+| **Mode**                 | `0.055849`             | `0.046085`             |
+| **Std**                  | `0.001655`             | `0.001518`             |
+| **Conf. Interval (95%)** | `[0.047695, 0.054195]` | `[0.046992, 0.052949]` |
+| **16th Percentile**      | `0.049330`             | `0.048335`             |
+| **84th Percentile**      | `0.052612`             | `0.051348`             |
+| **Execution time**       | `97.25 s`              | `72.22 s`              |
 
 ### Posterior Comparison
 

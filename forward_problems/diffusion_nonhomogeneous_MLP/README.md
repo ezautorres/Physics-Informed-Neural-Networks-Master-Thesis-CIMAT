@@ -40,7 +40,7 @@ $$
 | Collocation  | 200 interior; 200 boundary (100 @ $x=-1$, 100 @ $x=1$); 100 initial |
 | Loss         | PDE residual + boundary condition loss + initial condition loss     |
 | Weights used | $\lambda_{pde} = \lambda_{bc} = \lambda_{ic} =  1.0$                | 
-| Error        | $6.1\times10^{-6}$                                                  |
+| Error        | $6.1\times10^{-6}$ @ epoch 172                                      |
 | Time         | 5125.82 s                                                           |
 
 ## Training Losses
