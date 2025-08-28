@@ -26,7 +26,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,t) = \sin\left(\frac{n \pi x}{L}\right) \cdot \exp\left(-\alpha t\left(\frac{n\pi}{L}\right^2\right).
+\boldsymbol{u}(x,t) = \sin\left(\frac{n \pi x}{L}\right) \cdot \exp\left(-\alpha t\left(\frac{n\pi}{L}\right)^2\right).
 $$
         
 ## Model Summary for $\alpha\in[0,0.1],\ n=5,\ L=T=2$
