@@ -154,8 +154,13 @@ def train_pinn(
         optimizer.step(lambda: closure_fn(pinn_instance, model, X))       
 
         # Compute and store training loss.
-        loss_train = pinn_instance.loss_PINN(model, X).item()
+        loss_train, loss_dict = pinn_instance.loss_PINN(model, X)
+        loss_train = loss_train.item()
         pinn_instance.loss_history.append(loss_train)
+        pinn_instance.loss_components_history.append({
+            k: (v.item() if torch.is_tensor(v) else float(v))
+            for k, v in loss_dict.items()
+        })
 
         # Compute and store validation loss.
         with torch.no_grad():
@@ -198,6 +203,7 @@ def train_pinn(
                 "best_val_loss": pinn_instance.best_val_loss,
                 # History information.
                 "loss_history": pinn_instance.loss_history,
+                "loss_components_history": pinn_instance.loss_components_history,
                 "val_loss_history": pinn_instance.val_loss_history,
                 "optimizer": optimizer.state_dict(),
             },
@@ -211,7 +217,7 @@ def train_pinn(
                 f"{Style.RESET_ALL}"
             )
             break
-        elif loss_train < 1e-8:
+        elif loss_train < 1e-6:
             tqdm.write(
                 f"{Fore.RED}Loss is too low, stopping training!{Style.RESET_ALL}"
             )
@@ -222,7 +228,7 @@ def train_pinn(
             (
                 f"{Style.BRIGHT}{Fore.CYAN} Epoch{epoch:>{4 if epochs >= 100 else 3}}/{epochs}"
                 f"{Style.RESET_ALL}"
-                f"  ➤ Training loss: {Fore.GREEN}{loss_train:.4f}{Style.RESET_ALL} | "
+                f"  ➤ Training loss: {Fore.GREEN}{loss_train:.6f}{Style.RESET_ALL} | "
                 f"Validation loss: {Fore.YELLOW}{loss_val:.4f}{Style.RESET_ALL} | "
                 f"Epoch Time: {time.time() - epoch_time:.2f} s | "
                 f"Total Time: {elapsed_time:.2f} s"
@@ -265,8 +271,8 @@ def closure_fn(
         Scalar tensor representing the total physics-informed loss for the
         current batch.
     """
-    pinn_instance.optimizer.zero_grad()       # Reset the gradients.
-    loss = pinn_instance.loss_PINN(model, X)  # Compute the total cost.
-    loss.backward()                           # Compute the gradients.
+    pinn_instance.optimizer.zero_grad()          # Reset the gradients.
+    loss, _ = pinn_instance.loss_PINN(model, X)  # Compute the total cost.
+    loss.backward()                              # Compute the gradients.
 
     return loss

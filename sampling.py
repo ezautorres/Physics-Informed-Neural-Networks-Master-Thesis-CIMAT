@@ -275,7 +275,7 @@ def sample_square_uniform(
 
         return X_val.to(device)
 
-def sample_circle_uniform_center_restriction(
+def sample_circle_uniform_gauge_restriction(
     center: Tuple,
     radius: float,
     interiorSize: int,
@@ -289,18 +289,19 @@ def sample_circle_uniform_center_restriction(
 ) -> torch.Tensor:
     """
     Samples collocation points for a Physics-Informed Neural Network (PINN) in
-    a circular domain centered at a given point. This function generates points
+    a circular domain centered at a given point and mean equals zero at the
+    boundary for Neumann boundary conditions. This function generates points
     for training or validation in PINNs over a circular domain:
         - **Interior points** are sampled using Latin Hypercube Sampling (LHS)
         in polar coordinates.
         - **Boundary points** are uniformly distributed along the circle's
         perimeter.
-        - **Auxiliary points** are repeated at the center of the circle (e.g.,
-        for Neumann or source terms).
-    
+        - **Auxiliary points** are repeated at the boundary and the center of
+        the circle (e.g., for Neumann or source terms).
+
     Optionally, the function can append fixed or randomly sampled parameters
     to each point, useful for parametric PINNs. For validation (`train=False`),
-    the total number of points `valSize` is divided evenly among the three regions.
+    the total number of points `valSize` is divided evenly among the 4 regions.
 
     Parameters
     ----------
@@ -313,7 +314,7 @@ def sample_circle_uniform_center_restriction(
     boundarySize : int
         Number of points to sample on the boundary of the circle.
     auxiliarySize : int
-        Number of auxiliary points at the center of the circle.
+        Number of auxiliary points for the boundary and center of the circle.
     valSize : int, optional
         Total number of validation points to sample (used only if `train=False`).
     fixed_params : tuple, optional
@@ -361,11 +362,17 @@ def sample_circle_uniform_center_restriction(
         dim2_boundary = radius * torch.sin(theta_boundary) + center[1]
         X_boundary = torch.stack((dim1_boundary, dim2_boundary), dim=1)
 
+        # Gauge points.
+        theta_gauge = torch.linspace(0, 2 * torch.pi, auxiliarySize)
+        dim1_gauge = radius * torch.cos(theta_gauge) + center[0]
+        dim2_gauge = radius * torch.sin(theta_gauge) + center[1]
+        X_gauge = torch.stack((dim1_gauge, dim2_gauge), dim=1)
+
         # Center points.
         X_center = torch.zeros(auxiliarySize, 2)
 
         # Combine interior and boundary points.
-        X = torch.cat((X_interior, X_boundary, X_center), dim=0)
+        X = torch.cat((X_interior, X_boundary, X_gauge, X_center), dim=0)
 
         # Concatenate the fixed parameters.
         if fixed_params is not None:
@@ -388,7 +395,7 @@ def sample_circle_uniform_center_restriction(
 
     # Validation points.
     else:
-        per_region = valSize // 3  # Points per region.
+        per_region = valSize // 4  # Points per region.
 
         # Interior points in the circle.
         sampler = qmc.LatinHypercube(d=2)
@@ -405,19 +412,25 @@ def sample_circle_uniform_center_restriction(
         dim2_boundary = radius * torch.sin(theta_boundary) + center[1]
         X_boundary = torch.stack((dim1_boundary, dim2_boundary), dim=1)
 
+        # Gauge points.
+        theta_gauge = torch.linspace(0, 2 * torch.pi, per_region)
+        dim1_gauge = radius * torch.cos(theta_gauge) + center[0]
+        dim2_gauge = radius * torch.sin(theta_gauge) + center[1]
+        X_gauge = torch.stack((dim1_gauge, dim2_gauge), dim=1)
+
         # Center points.
         X_center = torch.zeros(per_region, 2)
 
         # Combine interior and boundary points.
-        X_val = torch.cat((X_interior, X_boundary, X_center), dim=0)
+        X_val = torch.cat((X_interior, X_boundary, X_gauge, X_center), dim=0)
 
         # Concatenate the fixed parameters.
         if fixed_params is not None:
-            params = torch.tensor(fixed_params).repeat(per_region * 3, 1)
+            params = torch.tensor(fixed_params).repeat(per_region * 4, 1)
             X_val = torch.cat((X_val, params), dim=1)
         if param_domains is not None:
             n_params = len(param_domains)
-            params = torch.rand(per_region * 3, n_params)
+            params = torch.rand(per_region * 4, n_params)
             for i in range(n_params):
                 params[:, i] = (
                     params[:, i] * (param_domains[i][1] - param_domains[i][0])

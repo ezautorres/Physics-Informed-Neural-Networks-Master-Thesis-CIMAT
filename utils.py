@@ -82,7 +82,7 @@ import torch.optim                        # Optimizers.
 
 from architectures import MLP, ConvNet2D  # Neural network models.
 from sampling import (                    # Sampling utilities.
-    sample_circle_uniform_center_restriction, 
+    sample_circle_uniform_gauge_restriction, 
     sample_square_uniform,
 )
 # Map string names to actual classes.
@@ -96,7 +96,7 @@ OPTIMIZER_REGISTRY = {
 }
 SAMPLING_REGISTRY = {
     "sample_square_uniform": sample_square_uniform,
-    "sample_circle_uniform_center_restriction": sample_circle_uniform_center_restriction,
+    "sample_circle_uniform_gauge_restriction": sample_circle_uniform_gauge_restriction,
 }
 
 def get_model_info(filename: str, device: str = 'cpu') -> None:
@@ -336,6 +336,9 @@ def load_model(
         'best_val_loss', pinn_instance.loss_val
     )
     pinn_instance.loss_history = checkpoint.get('loss_history', [])
+    pinn_instance.loss_components_history = checkpoint.get(
+        'loss_components_history', []
+    )
     pinn_instance.val_loss_history = checkpoint.get('val_loss_history', [])
 
     # Restore initialization parameters (optional).
@@ -473,6 +476,7 @@ def summarize_results(
         median = np.median(samples[:, j])
         mode = stats.mode(samples[:, j], axis=None, keepdims=False)[0]
         std = np.std(samples[:, j])
+        lower, upper = np.percentile(samples[:, j], [2.5, 97.5])
         q16, q84 = np.percentile(samples[:, j], [16, 84])
 
         # Print results.
@@ -482,7 +486,7 @@ def summarize_results(
         print(f"Median         : {median:.6f}")
         print(f"Mode           : {mode:.6f}")
         print(f"Std            : {std:.6f}")
-        print(f"Conf. interval : [{mean - std:.6f}, {mean + std:.6f}]")
+        print(f"95% Credible   : [{lower:.6f}, {upper:.6f}]")
         print(f"16th percent   : {q16:.6f}")
         print(f"84th percent   : {q84:.6f}")
         if execution_time is not None:

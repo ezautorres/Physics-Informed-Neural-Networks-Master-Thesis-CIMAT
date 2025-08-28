@@ -1,11 +1,12 @@
 """
 diffusion_nonhomogeneous_MLP.py
 -------------------------------
-PINN for the 1D Nonhomogeneous Diffusion Equation.
+Physics-Informed Neural Network (PINN) for the 1D Nonhomogeneous Diffusion
+Equation.
 
-Author: Ezau Faridh Torres Torres
-Date: 20 August 2025
-Institution: Centro de Investigación en Matemáticas (CIMAT)
+Author: Ezau Faridh Torres Torres.
+Date: 25 August 2025.
+Institution: Centro de Investigación en Matemáticas (CIMAT).
 
 Description
 -----------
@@ -19,14 +20,14 @@ $$
     \quad (x,t)\in(-1,1)\times(0,1).
 $$
 
-Boundary conditions:
-$$
-    u(-1,t) = u(1,t) = 0, \quad t\in[0,1].
-$$
-
 Initial condition:
 $$
     u(x,0) = \sin(\pi x), \quad x\in[-1,1].
+$$
+
+Boundary conditions:
+$$
+    u(-1,t) = u(1,t) = 0, \quad t\in[0,1].
 $$
 
 Analytical solution:
@@ -142,9 +143,11 @@ class DiffusionNonhomogeneousPinn(PinnBase):
             Tensor of shape (N,) containing the analytical solution evaluated
             at each input point.
         """
-        return torch.exp(-X[:, 1]) * torch.sin(torch.pi * X[:, 0])
+        return torch.exp(- X[:, 1]) * torch.sin(torch.pi * X[:, 0])
 
-    def loss_PINN(self, net: Callable, X: torch.Tensor) -> torch.Tensor:
+    def loss_PINN(
+            self, net: Callable, X: torch.Tensor
+        ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """
         Computes the total PINN loss as a weighted sum of the interior PDE
         residual loss, the initial and the boundary condition loss.
@@ -162,6 +165,9 @@ class DiffusionNonhomogeneousPinn(PinnBase):
         -------
         torch.Tensor
             Scalar tensor representing the total training loss for the current batch.
+        dict[str, torch.Tensor]
+            Dictionary containing individual loss components 'loss_pde', 'loss_bc'
+            and 'loss_ic'.
 
         Notes
         -----
@@ -170,19 +176,19 @@ class DiffusionNonhomogeneousPinn(PinnBase):
         """
         # Define the weights for the different loss components.
         lb_pde = 1.0  # lb_pde.
-        lb_ic  = 1.0  # λ_ic.
-        lb_bc  = 1.0  # λ_bc.
+        lb_ic = 1.0  # λ_ic.
+        lb_bc = 1.0  # λ_bc.
 
         # Extract the number of points for each region from the domain_kwargs.
-        N_pde  = self.domain_kwargs["interiorSize"]
+        N_pde = self.domain_kwargs["interiorSize"]
         N_bc_l = self.domain_kwargs["dim1_minSize"]
         N_bc_r = self.domain_kwargs["dim1_maxSize"]
-        N_ic   = self.domain_kwargs["dim2_minSize"]
+        N_ic = self.domain_kwargs["dim2_minSize"]
         N_total = N_pde + N_bc_l + N_bc_r + N_ic
 
         # Create indicators for each region.
         indicators = torch.cat((
-            torch.ones(N_pde),       # Interior points [-1,1]x[0,1].
+            torch.ones(N_pde),  # Interior points [-1,1]x[0,1].
             torch.ones(N_bc_l) * 2,  # Boundary points at x = -1.
             torch.ones(N_bc_r) * 3,  # Boundary points at x = 1.
             torch.ones(N_ic)   * 4   # Initial condition points at t = 0.
@@ -194,7 +200,7 @@ class DiffusionNonhomogeneousPinn(PinnBase):
         loss_bc = torch.tensor(0.0, device=X.device)   
 
         for i in range(N_total):
-            xt = X[i, :].unsqueeze(0).requires_grad_(True)  # Input point (x,t).
+            xt = X[i, :].unsqueeze(0).requires_grad_(True)  # Input point (x, t).
             region = int(indicators[i].item())  # Region indicator.
             u = net(xt)  # Output of the net for the current input point.
 
@@ -241,20 +247,26 @@ class DiffusionNonhomogeneousPinn(PinnBase):
 
         # Normalize each term.
         loss_pde /= N_pde
-        loss_ic  /= N_ic
-        loss_bc  /= (N_bc_l + N_bc_r)
+        loss_ic /= N_ic
+        loss_bc /= (N_bc_l + N_bc_r)
 
         # --------------------------------------------------------------------------
         # PINN loss: λ_pde * L_pde + λ_ic * L_ic + λ_bc * L_bc.
         # --------------------------------------------------------------------------
-        return lb_pde * loss_pde + lb_ic * loss_ic + lb_bc * loss_bc
+        loss_PINN = lb_pde * loss_pde + lb_ic * loss_ic + lb_bc * loss_bc
+
+        return loss_PINN, {
+            "loss_pde": loss_pde,
+            "loss_ic": loss_ic,
+            "loss_bc": loss_bc
+        }
 
 # ==================================================================================
 # Main function.
 # ==================================================================================
 if __name__ == "__main__":
 
-    from architectures import MLP               # Import the MLP architecture for the PINN.
+    from architectures import MLP               # Import the MLP architecture.
     from sampling import sample_square_uniform  # Uniform sampling in a square domain.
 
     # ------------------------------------------------------------------------------
@@ -285,7 +297,7 @@ if __name__ == "__main__":
     # Architecture and optimizer parameters.
     # ------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize': 2,            
+        'inputSize': 2,  # Because we do not have parameters.      
         'hidden_lys': [50, 200, 100],
         'outputSize': 1,
         'activation': 'tanh',         
@@ -295,24 +307,24 @@ if __name__ == "__main__":
     
     optimizer_class = torch.optim.LBFGS
     optimizer_kwargs = {
-        'lr': 1,                          # Learning rate.
-        'max_iter': 100,                  # Maximum number of iterations.
-        'tolerance_grad': 1e-09,          # Tolerance for the gradient.
-        'tolerance_change': 1e-09,        # Tolerance for the change in the loss.
-        'history_size': 100,              # History size for the optimizer.
-        'line_search_fn': "strong_wolfe"  # Line search function for the optimizer.
+        'lr': 1,  # Learning rate.
+        'max_iter': 100,                  
+        'tolerance_grad': 1e-09,  # Tolerance for the gradient.
+        'tolerance_change': 1e-09,  # Tolerance for the change in the loss.
+        'history_size': 100,
+        'line_search_fn': "strong_wolfe"  # Line search function.
     }
 
     checkpoint_filename = 'diffusion_nonhomogeneous_MLP.pth'
     diffusion_pinn = DiffusionNonhomogeneousPinn(
-        model_class=MLP,                           # Model class for the PINN.
-        model_kwargs=model_kwargs,          
-        domain_kwargs=domain_kwargs,               # Domain parameters.
-        optimizer_class=optimizer_class,   
-        optimizer_kwargs=optimizer_kwargs, 
-        epochs=50,                          
-        patience=10,                        
-        sampling_fn=sample_square_uniform,        # Sampling function.
+        model_class=MLP,  # Model class for the PINN.
+        model_kwargs=model_kwargs,
+        domain_kwargs=domain_kwargs,  # Domain parameters.
+        optimizer_class=optimizer_class,
+        optimizer_kwargs=optimizer_kwargs,
+        epochs=200,
+        patience=30,
+        sampling_fn=sample_square_uniform,  # Sampling function.
         checkpoint_filename=checkpoint_filename,  # Filename for the checkpoints.
     )
 
@@ -320,9 +332,9 @@ if __name__ == "__main__":
     # Train and plot.
     # ------------------------------------------------------------------------------
     # Train the model.
-    #diffusion_pinn.train()
+    # diffusion_pinn.train()  # Uncomment to train the model.
 
-    # Load the complete model and print model information.
+    # Load the complete model and print information.
     diffusion_pinn.load_model(load_best=False)
     get_model_info(checkpoint_filename)        
     

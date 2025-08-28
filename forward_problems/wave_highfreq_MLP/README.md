@@ -1,30 +1,48 @@
-# Poisson Equation
+# 1D Wave Equation
 
-This experiment solves the 2D Poisson equation on the unit square \[0,1\]×\[0,1\] using a Physics-Informed Neural Network.
+This experiment solves the 1D Wave Equation on the space-time domain 
+$\Omega\times[0,1]$ with $\Omega:=[0,1]$ using a Physics-Informed Neural Network (PINN) with Dirichlet boundary conditions and initial conditions. This experiment demonstrates how a Physics-Informed Neural Network (PINN) can easily fail damped by a high wave speed $c$.
 
 ## Problem Description
 
 The following PDE is solved:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Δu(x,y) = –2π² · sin(πx) · sin(πy),
+$$
+\frac{\partial \boldsymbol{u}^2}{\partial t^2} - c^2 \frac{\partial \boldsymbol{u}^2}{\partial x^2} = 0, \qquad x\in\Omega, \quad t\in(0,1],
+$$
 
-with homogeneous Dirichlet boundary conditions:
+and homogeneous Dirichlet boundary conditions:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+$$
+    \boldsymbol{u}(0,t) = \boldsymbol{u}(1,t) = 0, \qquad t\in[0,1].
+$$
+
+Initial condition:
+
+$$
+    \boldsymbol{u}(x,0) = \sin(\pi x) + \sin(2 \pi x), \quad \frac{\partial \boldsymbol{u}}{\partial t}(x,0) = 0, \qquad x\in\overline{\Omega}.
+$$
 
 The analytical solution is:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,y) = sin(πx) · sin(πy).
+$$
+\boldsymbol{u}(x,t) = \sin(\pi x)\cdot\cos(\pi c t) + \sin(2\pi x)\cdot\cos(2\pi c t).
+$$
         
----
+## Model Summary for $c=10$
 
-## Model Summary
-
-- Neural network: MLP with 3 hidden layers of 100 neurons each.
-- Optimizer: L-BFGS with strong Wolfe line search.
-- Domain: unit square \[0,1\]×\[0,1\]
-- Collocation points: 500 interior, 8000 on the boundary.
-- Loss: PDE residual + boundary condition loss.
+| Component    | Choice                                                              |
+|--------------|---------------------------------------------------------------------|
+| Network      | MLP with 6 hidden layers of 100 neurons                             |
+| Optimizer    | L-BFGS (strong Wolfe line search)                                   |
+| Activation   | Swish (with LayerNorm after each Linear)                            |
+| Dropout      | 0.001                                                               |
+| Domain       | $x\in\Omega=[0,1],\ t\in[0,1]$                                      |
+| Collocation  | 1500 interior; 400 boundary (200 @ $x=0$, 200 @ $x=1$); 500 initial |
+| Loss         | PDE residual + boundary condition loss + initial condition loss     |
+| Weights used | $\lambda_{pde} = 2.0$, $\lambda_{bc} = \lambda_{ic} = 1.0$          | 
+| Error        | $2.94\times10^{-1}$                                                 |
+| Time         | 3419.14 s                                                           |
 
 ## Training Losses
 
@@ -46,4 +64,4 @@ The analytical solution is:
 
 ---
 
-*Author: Ezau Faridh Torres Torres · CIMAT · Jun 2025*
+*Author: Ezau Faridh Torres Torres · CIMAT · Aug 2025*

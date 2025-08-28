@@ -17,7 +17,8 @@ square and circular domains, and Bayesian uncertainty quantification results.
 Functions
 ---------
 plot_loss :
-    Plot the training and validation loss history across epochs.
+    Plot the training and validation loss history across epochs. If
+    `model_instance.loss_components_history` exists, also plot per-term losses.
 plot_solution_square :
     Generate 3D surface plots of PINN predictions on a square domain.
 plot_solution_circle :
@@ -50,6 +51,8 @@ import os                              # File paths.
 import sys                             # System functions.
 import torch                           # Tensors and autograd.
 import matplotlib.pyplot as plt        # Plotting.
+import matplotlib as mpl               # Plotting.
+import math                            # Math functions.
 from typing import Callable, Sequence  # Type hints.
 
 def plot_loss(
@@ -57,31 +60,31 @@ def plot_loss(
     filename: str | None = None,
     ax: plt.Axes | None = None,
     complete_training: bool = True,
+    ic: bool = True
 ) -> None:
     """
     Plots the training and validation loss history of a PINN model instance.
-    This function generates a semilog plot of the loss values per epoch using
-    the stored loss history within the model instance. If available, it also
-    marks the best epoch found during training. It is useful for visually
-    assessing convergence behavior during optimization.
+    Also plots per-term losses (loss_pde, loss_bc, loss_ic, loss_add, loss_data)
+    if `model_instance.loss_components_history` exists. Each entry in that list
+    must be a dict with the terms available for that epoch.
 
     Parameters
     ----------
     model_instance : Callable
         Trained PINN model instance with attributes:
-            - `loss_history` (list or array): Training loss values per epoch.
-            - `val_loss_history` (list or array): Validation loss values per
-            epoch.
-            - `best_epoch` (int, optional): Epoch index with the best validation
-            performance.
+            - loss_history (list[float]): Training loss per epoch.
+            - val_loss_history (list[float] | None): Validation loss per epoch.
+            - best_epoch (int, optional): Epoch index with the best validation.
+            - loss_components_history (list[dict[str, float]], optional):
+                Per-epoch dict of component losses (keys like 'loss_pde', ...).
     filename : str | None, optional
         If provided, the plot will be saved to this path as a PDF.
     ax : plt.Axes | None, optional
-        An existing matplotlib axis to draw the plot on. If not provided, a new
-        figure will be created.
+        Axis to draw on. If not provided, a new figure is created.
     complete_training : bool, optional
-        If True, the best epoch will be highlighted on the plot (if available).
-        Default is True.
+        If True, highlight best epoch (if available). Default True.
+    ic : bool, optional
+        If True, include initial condition loss in the plot. Default True.
 
     Returns
     -------
@@ -89,14 +92,27 @@ def plot_loss(
         The function only produces a visual output. If `ax` is not provided, the
         figure is shown. If `filename` is provided, the plot is saved as a PDF.
     """
+    # Additional helpers.
+    def _series_from_components(history: list[dict], key: str) -> list[float]:
+        """Length = #epochs; NaN when the component is missing in that epoch."""
+        out = []
+        for d in history:
+            out.append(d[key] if key in d else float("nan"))
+        return out
+
+    def _all_component_keys(history: list[dict]) -> list[str]:
+        keys = set()
+        for d in history:
+            keys.update(d.keys())
+        pref = ["loss_pde", "loss_bc", "loss_ic", "loss_add", "loss_data"]
+        ordered = [k for k in pref if k in keys] + [k for k in sorted(keys) if k not in pref]
+        
+        return ordered
+
     # Extract loss history and best epoch from the model instance.
     loss_history = model_instance.loss_history
     val_loss_history = model_instance.val_loss_history
-    best_epoch = (
-        model_instance.best_epoch
-        if hasattr(model_instance, "best_epoch")
-        else None
-    )
+    best_epoch = getattr(model_instance, "best_epoch", None)
 
     # Create a new figure and axis if not provided.
     created_figure = False
@@ -109,18 +125,42 @@ def plot_loss(
     ax.plot(
         epochs,
         loss_history,
-        label='Training loss',
-        color='#00629B',
-        linewidth=3
+        label="Training loss",
+        color="#BA0C2F",
+        linewidth=3,
+        zorder=20
+
     )
     if val_loss_history is not None:
         ax.plot(
             epochs,
             val_loss_history,
-            label='Validation loss',
-            color='#E87722',
+            label="Validation loss",
+            color="#00629B",
             linewidth=3
         )
+
+    # Plot component losses if available.
+    components_hist = getattr(model_instance, "loss_components_history", None)
+    if isinstance(components_hist, list) and len(components_hist) > 0:
+        keys = _all_component_keys(components_hist)
+        colors = ["#00843D", "#E87722", "#981D97", "#000000"]
+        labels = ["PDE loss", "BC loss", "Add. loss", "Data loss"]
+        if ic:
+            colors.insert(2, "#FFC72C")
+            labels.insert(2, "IC loss")
+        for k, color, label in zip(keys, colors, labels):
+            series = _series_from_components(components_hist, k)
+        
+            if all(math.isnan(v) for v in series):
+                continue
+            ax.plot(
+                epochs,
+                series,
+                label=label,
+                color=color,
+                linewidth=3,
+            )
 
     # Best epoch line.
     if best_epoch and complete_training:
@@ -134,11 +174,11 @@ def plot_loss(
         )
 
     # Labels and styling.
-    ax.set_xlabel('Epochs', fontsize=22)
-    ax.set_ylabel('Loss', fontsize=22)
-    ax.set_yscale('log')
-    ax.tick_params(axis='both', labelsize=20)
-    ax.legend(fontsize=20)
+    ax.set_xlabel("Epochs", fontsize=22)
+    ax.set_ylabel("Loss", fontsize=22)
+    ax.set_yscale("log")
+    ax.tick_params(axis="both", labelsize=20)
+    ax.legend(fontsize=18, ncol=2)
     ax.grid(True)
 
     # Save/show plot.
@@ -146,7 +186,7 @@ def plot_loss(
         path = os.path.join(
             os.path.dirname(os.path.abspath(sys.argv[0])), filename
         )
-        plt.savefig(path, bbox_inches='tight', pad_inches=0.4, dpi=500)
+        plt.savefig(path, bbox_inches="tight", pad_inches=0.4, dpi=500)
     if created_figure:
         plt.show()
 
@@ -441,7 +481,8 @@ def plot_comparison_contour_square(
     filename: str | None = None,
     levels: int = 20,
     ax: plt.Axes | None = None,
-    time_dependent: bool = False
+    time_dependent: bool = False,
+    adjust_scale: bool = False
 ) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical
@@ -479,6 +520,8 @@ def plot_comparison_contour_square(
     time_dependent : bool, optional
         If True, labels the vertical axis as time ($t$). Otherwise, labels are
         shown as spatial ($x, y$).
+    adjust_scale : bool, optional
+        If True, adjusts the color scale of the solution plots. Default is False.
 
     Returns
     -------
@@ -555,7 +598,8 @@ def plot_comparison_contour_square(
 
     # Colorbar for solution plots (left two).
     cbar_ax1 = fig.add_axes([0.92, 0.58, 0.015, 0.30])
-    fig.colorbar(cs2, cax=cbar_ax1).set_label("Solution Scale", fontsize=15)
+    cs = cs1 if adjust_scale else cs2
+    fig.colorbar(cs, cax=cbar_ax1).set_label("Solution Scale", fontsize=15)
 
     # Colorbar for error plot (right).
     cbar_ax2 = fig.add_axes([0.92, 0.15, 0.015, 0.30])
@@ -577,7 +621,8 @@ def plot_comparison_contour_circle(
     filename: str | None = None,
     levels: int = 20,
     ax: plt.Axes | None = None,
-    time_dependent: bool = False
+    time_dependent: bool = False,
+    adjust_scale: bool = False
 ) -> None:
     """
     Plots a contour comparison between the PINN prediction, the analytical
@@ -612,6 +657,8 @@ def plot_comparison_contour_circle(
     time_dependent : bool, optional
         If True, labels the vertical axis as time ($t$). Otherwise, labels are
         shown as spatial ($x, y$).
+    adjust_scale : bool, optional
+        If True, adjusts the color scale of the solution plots. Default is False.
 
     Returns
     -------
@@ -654,16 +701,14 @@ def plot_comparison_contour_circle(
                     Z_error[i, j] = torch.abs(pred - true)
 
     # Shared scale for solution plots.
-    #vmin = min(
-    #    torch.min(Z_pinn[~Z_pinn.isnan()]),
-    #    torch.min(Z_true[~Z_true.isnan()])
-    #).item()
-    #vmax = max(
-    #    torch.max(Z_pinn[~Z_pinn.isnan()]),
-    #    torch.max(Z_true[~Z_true.isnan()])
-    #).item()
-    vmin = min(torch.nanmin(Z_pinn), torch.nanmin(Z_true)).item()
-    vmax = max(torch.nanmax(Z_pinn), torch.nanmax(Z_true)).item()
+    vmin = min(
+        torch.min(Z_pinn[~Z_pinn.isnan()]),
+        torch.min(Z_true[~Z_true.isnan()])
+    ).item()
+    vmax = max(
+        torch.max(Z_pinn[~Z_pinn.isnan()]),
+        torch.max(Z_true[~Z_true.isnan()])
+    ).item()
 
     # Plot setup with three subplots and two colorbars.
     created_figure = False
@@ -699,7 +744,8 @@ def plot_comparison_contour_circle(
 
     # Colorbar for solution plots (left two).
     cbar_ax1 = fig.add_axes([0.92, 0.58, 0.015, 0.30])
-    fig.colorbar(cs2, cax=cbar_ax1).set_label("Solution Scale", fontsize=15)
+    cs = cs1 if adjust_scale else cs2
+    fig.colorbar(cs, cax=cbar_ax1).set_label("Solution Scale", fontsize=15)
 
     # Colorbar for error plot (right).
     cbar_ax2 = fig.add_axes([0.92, 0.15, 0.015, 0.30])
@@ -848,7 +894,7 @@ def plot_joint_posteriors(
     if xlabel:
         ax.set_xlabel(xlabel, fontsize=14)
     ax.set_ylabel("density", fontsize=14, fontweight='bold')
-    ax.tick_params(axis='both', labelsize=12, fontweight='bold')
+    ax.tick_params(axis='both', labelsize=12)
     ax.grid(True)
     plt.tight_layout()
 

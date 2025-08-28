@@ -1,30 +1,41 @@
-# Poisson Equation
+# Nonhomogeneous Helmholtz Equation in 2D
 
-This experiment solves the 2D Poisson equation on the unit square \[0,1\]×\[0,1\] using a Physics-Informed Neural Network.
+This experiment solves the 2D Nonhomogeneous Helmholtz equation on the unit square $\Omega:=[0,1]\times[0,1]$ using a Physics-Informed Neural Network. This experiment exemplifies a case where Physics-Informed Neural Networks (PINNs) can fail with a simple case spatial oscillations damped by a reaction term $−k^2\boldsymbol{u}, particularly for high wavenumbers $k$.
 
 ## Problem Description
 
 The following PDE is solved:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Δu(x,y) = –2π² · sin(πx) · sin(πy),
+$$
+-\Delta \boldsymbol{u}(x,y) - k^2 \boldsymbol{u} (x,y) = k^2 \sin(k x)\sin(k y), \qquad (x,y)\in\Omega,
+$$
 
 with homogeneous Dirichlet boundary conditions:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+$$
+\boldsymbol{u}(x,y)= 0, \qquad (x,y)\in\partial\Omega.
+$$
 
-The analytical solution is:
+When $k=n\pi$ with $n\in\mathbb{Z}^{+}$, the analytical solution is:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,y) = sin(πx) · sin(πy).
+$$
+\boldsymbol{u}(x,y) = \sin(k x) \cdot \sin(k y).
+$$
         
----
+## Model Summary for $k=3\pi$
 
-## Model Summary
-
-- Neural network: MLP with 3 hidden layers of 100 neurons each.
-- Optimizer: L-BFGS with strong Wolfe line search.
-- Domain: unit square \[0,1\]×\[0,1\]
-- Collocation points: 500 interior, 8000 on the boundary.
-- Loss: PDE residual + boundary condition loss.
+| Component    | Choice                                       |
+|--------------|----------------------------------------------|
+| Network      | MLP with 4 hidden layers: [100, 120, 75, 50] |
+| Optimizer    | L-BFGS (strong Wolfe line search)            |
+| Activation   | Tanh (with LayerNorm after each Linear)      |
+| Dropout      | 0.01                                         |
+| Domain       | Unit square $\Omega=[0,1]\times[0,1]$        |
+| Collocation  | 1200 interior, 1600 boundary @ 400 each      |
+| Loss         | PDE residual + boundary condition loss       |
+| Weights used | $\lambda_{pde} = \lambda_{bc} = 1.0$         | 
+| Error        | $3.85\times 10^{2}$ @ epoch                  |
+| Time         | 24985.46 s                                   |
 
 ## Training Losses
 
@@ -46,4 +57,4 @@ The analytical solution is:
 
 ---
 
-*Author: Ezau Faridh Torres Torres · CIMAT · Jun 2025*
+*Author: Ezau Faridh Torres Torres · CIMAT · Aug 2025*

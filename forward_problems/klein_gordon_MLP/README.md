@@ -1,30 +1,48 @@
-# Poisson Equation
+# 1D Nonlinear Klein-Gordon Equation
 
-This experiment solves the 2D Poisson equation on the unit square \[0,1\]×\[0,1\] using a Physics-Informed Neural Network.
+This experiment solves the nonlinear Klein-Gordon equation on the space-time domain 
+$\Omega\times[0,3]$ with $\Omega:=[-1,1]$ using a Physics-Informed Neural Network (PINN) with Dirichlet boundary conditions and initial conditions. This experiment demonstrates how a Physics-Informed Neural Network (PINN) can solve equation, showcasing its ability to approximate PDE solutions without labeled data.
 
 ## Problem Description
 
 The following PDE is solved:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Δu(x,y) = –2π² · sin(πx) · sin(πy),
+$$
+\frac{\partial \boldsymbol{u}^2}{\partial t^2} + \alpha \frac{\partial \boldsymbol{u}^2}{\partial x^2} + \beta \boldsymbol{u} + \gamma \boldsymbol{u}^{k} = -x\cdot\cos{t} + x^{2}\cdot\cos^{2}{t}, \qquad x\in\Omega, \quad t\in(0,3],
+$$
 
-with homogeneous Dirichlet boundary conditions:
+with parameters $\alpha=-1$, $\beta=0$, $\gamma=1$, $k=2$, and homogeneous Dirichlet boundary conditions:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
+$$
+    \boldsymbol{u}(-1,t) = -\cos(t), \quad \boldsymbol{u}(1,t) = \cos(t), \qquad t\in[0,3].
+$$
+
+Initial condition:
+
+$$
+    \boldsymbol{u}(x,0) = x, \quad \frac{\partial \boldsymbol{u}}{\partial t}(x,0) = 0, \qquad x\in\overline{\Omega}.
+$$
 
 The analytical solution is:
 
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; u(x,y) = sin(πx) · sin(πy).
+$$
+\boldsymbol{u}(x,t) = x\cdot\cos(t).
+$$
         
----
-
 ## Model Summary
 
-- Neural network: MLP with 3 hidden layers of 100 neurons each.
-- Optimizer: L-BFGS with strong Wolfe line search.
-- Domain: unit square \[0,1\]×\[0,1\]
-- Collocation points: 500 interior, 8000 on the boundary.
-- Loss: PDE residual + boundary condition loss.
+| Component    | Choice                                                              |
+|--------------|---------------------------------------------------------------------|
+| Network      | MLP with hidden layers [75, 75, 75, 75]                             |
+| Optimizer    | L-BFGS (strong Wolfe line search)                                   |
+| Activation   | Swish (with LayerNorm after each Linear)                            |
+| Dropout      | 0.00                                                                |
+| Domain       | $x\in\Omega=[-1,1],\ t\in[0,3]$                                     |
+| Collocation  | 230 interior; 200 boundary (100 @ $x=-1$, 100 @ $x=1$); 100 initial |
+| Loss         | PDE residual + boundary condition loss + initial condition loss     |
+| Weights used | $\lambda_{pde} = 1.0$, $\lambda_{bc} = \lambda_{ic} = 1.5$          | 
+| Error        | $9.1\times10^{-7}$                                                  |
+| Time         | 4583.53 s                                                           |
 
 ## Training Losses
 
@@ -46,4 +64,4 @@ The analytical solution is:
 
 ---
 
-*Author: Ezau Faridh Torres Torres · CIMAT · Jun 2025*
+*Author: Ezau Faridh Torres Torres · CIMAT · Aug 2025*

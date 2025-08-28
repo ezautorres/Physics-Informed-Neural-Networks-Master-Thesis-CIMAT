@@ -3,9 +3,9 @@ poisson_pinn.py
 ---------------
 Physics-Informed Neural Network (PINN) for the two-dimensional Poisson equation.
 
-Author: Ezau Faridh Torres Torres
-Date: 20 August 2025
-Institution: Centro de Investigación en Matemáticas (CIMAT)
+Author: Ezau Faridh Torres Torres.
+Date: 25 August 2025.
+Institution: Centro de Investigación en Matemáticas (CIMAT).
 
 Description
 -----------
@@ -136,16 +136,18 @@ class PoissonPinn(PinnBase):
         """
         return torch.sin(torch.pi * X[:, 0]) * torch.sin(torch.pi * X[:, 1])
 
-    def loss_PINN(self, net: Callable, X: torch.Tensor) -> torch.Tensor:
+    def loss_PINN(
+            self, net: Callable, X: torch.Tensor
+        ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """
-        Computes the total PINN loss as a weighted sum of the interior PDE residual
-        loss and the boundary condition loss.
+        Computes the total PINN loss as a weighted sum of the interior PDE
+        residual loss and the boundary condition loss.
 
         Parameters
         ----------
         net : Callable
             Neural network model approximating the solution
-                $\boldsymbol{\hat{u}}_{w}(x,y)$.
+                $\boldsymbol{\hat{u}}_{w}(x, y)$.
         X : torch.Tensor
             Tensor of input points, where the first N_pde entries correspond to
             interior domain points and the rest to boundary points.
@@ -155,6 +157,8 @@ class PoissonPinn(PinnBase):
         torch.Tensor
             Scalar tensor representing the total training loss for the current
             batch.
+        dict[str, torch.Tensor]
+            Dictionary containing individual loss components 'loss_pde' and 'loss_bc'.
 
         Notes
         -----
@@ -163,14 +167,14 @@ class PoissonPinn(PinnBase):
         """
         # Define the weights for the different loss components.
         lb_pde = 1.0  # λ_pde.
-        lb_bc  = 1.0  # λ_bc.
+        lb_bc = 1.0  # λ_bc.
 
         # Extract the number of points for each region from the domain_kwargs.
         N_pde = self.domain_kwargs["interiorSize"]
         
         # Split the input tensor X into the different regions.
         X_pde = X[0:N_pde]  # Interior points.
-        X_bc  = X[N_pde:]   # Boundary points.
+        X_bc = X[N_pde:]  # Boundary points.
 
         # --------------------------------------------------------------------------
         # PDE loss: N[u] = f => 𝚫u = -2π²sin(πx)sin(πy).
@@ -207,20 +211,24 @@ class PoissonPinn(PinnBase):
         # --------------------------------------------------------------------------
         # Boundary condition loss: B[u] = g => u(x,0) = u(x,1) = u(0,y) = u(1,y) = 0.
         # --------------------------------------------------------------------------
-        # Boundary condition loss.
         loss_bc = torch.mean(net(X_bc)**2)
 
         # --------------------------------------------------------------------------
         # PINN loss: λ_pde * L_pde + λ_bc * L_bc.
         # --------------------------------------------------------------------------
-        return lb_pde * loss_pde + lb_bc * loss_bc
+        loss_PINN = lb_pde * loss_pde + lb_bc * loss_bc
+
+        return loss_PINN, {
+            "loss_pde": loss_pde,
+            "loss_bc": loss_bc
+            }
 
 # ==================================================================================
 # Main function.
 # ==================================================================================
 if __name__ == "__main__":
 
-    from architectures import MLP               # Import the MLP architecture for the PINN.
+    from architectures import MLP               # Import the MLP architecture.
     from sampling import sample_square_uniform  # Uniform sampling in a square domain.
 
     # ------------------------------------------------------------------------------
@@ -251,7 +259,7 @@ if __name__ == "__main__":
     # Architecture and optimizer parameters.
     # ------------------------------------------------------------------------------
     model_kwargs = {
-        'inputSize': 2,         # Because we do not have parameters.
+        'inputSize': 2,  # Because we do not have parameters.
         'hidden_lys': [100, 100, 100], 
         'outputSize': 1,            
         'activation': 'tanh',         
@@ -261,41 +269,40 @@ if __name__ == "__main__":
     
     optimizer_class = torch.optim.LBFGS
     optimizer_kwargs = {
-        'lr': 1,                          # Learning rate.
-        'max_iter': 100,                  # Maximum number of iterations.
-        'tolerance_grad': 1e-09,          # Tolerance for the gradient.
-        'tolerance_change': 1e-09,        # Tolerance for the change in the loss.
-        'history_size': 100,              # History size for the optimizer.
+        'lr': 1,  # Learning rate.
+        'max_iter': 100,
+        'tolerance_grad': 1e-09,  # Tolerance for the gradient.
+        'tolerance_change': 1e-09,  # Tolerance for the change in the loss.
+        'history_size': 100,
         'line_search_fn': "strong_wolfe"  # Line search function.
     }
 
     checkpoint_filename = 'poisson_MLP.pth'
     poisson_pinn = PoissonPinn(
-        model_class=MLP,                          # Model class for the PINN.
+        model_class=MLP,  # Model class for the PINN.
         model_kwargs=model_kwargs,                
-        domain_kwargs=domain_kwargs,              # Domain parameters.
-        optimizer_class=optimizer_class,         
-        optimizer_kwargs=optimizer_kwargs,        
-        epochs=150,                               
-        patience=10,                              
-        sampling_fn=sample_square_uniform,        # Sampling function.
+        domain_kwargs=domain_kwargs,  # Domain parameters.
+        optimizer_class=optimizer_class,
+        optimizer_kwargs=optimizer_kwargs,
+        epochs=1500,
+        patience=150,
+        sampling_fn=sample_square_uniform,  # Sampling function.
         checkpoint_filename=checkpoint_filename,  # Filename for the checkpoints.
     )
 
     # ------------------------------------------------------------------------------
     # Train and plot.
     # ------------------------------------------------------------------------------
-    
     # Train the model.
-    #poisson_pinn.train()
+    # poisson_pinn.train()  # Uncomment to train the model.
 
-    # Load the complete model and print model information.
+    # Load the complete model and print information.
     poisson_pinn.load_model(load_best=False) 
     get_model_info(checkpoint_filename)
     
     # Plot the loss and the solution.
     plot_loss(
-        model_instance=poisson_pinn, filename="loss_plot.pdf"
+        model_instance=poisson_pinn, filename="loss_plot.png"
     )
 
     # Plot the solution with the best model.
@@ -303,7 +310,7 @@ if __name__ == "__main__":
     plot_solution_square(
         model_instance=poisson_pinn,
         domain_kwargs=domain_kwargs,
-        filename="solution_plot.pdf"
+        filename="solution_plot.png"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.

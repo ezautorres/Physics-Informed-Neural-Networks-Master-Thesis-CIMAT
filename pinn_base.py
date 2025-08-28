@@ -42,7 +42,9 @@ Example: defining a custom PINN subclass
 ...         x, t = X[:, 0], X[:, 1]
 ...         return torch.exp(-t) * torch.sin(torch.pi * x)
 
-...     def loss_PINN(self, net, X: torch.Tensor) -> torch.Tensor:
+...     def loss_PINN(
+...         self, net: Callable, X: torch.Tensor
+...     ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
 ...         # Example PDE residual loss
 ...         X.requires_grad_(True)
 ...         u_pred = net(X)
@@ -54,7 +56,7 @@ Example: defining a custom PINN subclass
 ...             create_graph=True
 ...         )[0][:, 0]
 ...         residual = u_t - 0.01 * u_xx
-...         return torch.mean(residual**2)
+...         return torch.mean(residual**2), {"loss_pde": torch.mean(residual**2)}
 
 >>> # Instantiate and train
 >>> pinn = HeatEquationPINN(
@@ -74,7 +76,7 @@ References
 - Raissi, M., Perdikaris, P., & Karniadakis, G. E. (2019). Physics-informed
   neural networks: A deep learning framework for solving forward and inverse
   problems involving nonlinear partial differential equations.
-  Journal of Computational Physics, 378, 686–707.
+  Journal of Computational Physics, 378, 686-707.
 - PyTorch documentation: https://pytorch.org/docs/stable/
 - NumPy documentation: https://numpy.org/doc/
 """
@@ -96,7 +98,6 @@ torch.backends.cudnn.benchmark = False             # Disable for reproducibility
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from trainer import train_pinn                     # Training loop.
 from utils import load_model, save_checkpoint      # Model I/O.
-
 
 class PinnBase(ABC):
     def __init__(
@@ -158,7 +159,9 @@ class PinnBase(ABC):
             os.path.dirname(os.path.abspath(sys.argv[0])), "trained_models"
         )
         self.checkpoint_filename = checkpoint_filename
-        self.best_model_filename = checkpoint_filename.replace('.pth', '_best.pth')
+        self.best_model_filename = checkpoint_filename.replace(
+            '.pth', '_best.pth'
+        )
 
         # Optimizer config.
         self.optimizer_class = (
@@ -179,6 +182,7 @@ class PinnBase(ABC):
 
         # Initialize training history.
         self.loss_history = []
+        self.loss_components_history = []
         self.val_loss_history = []
         self.best_train_loss = float('inf')
 
@@ -206,7 +210,9 @@ class PinnBase(ABC):
         pass
 
     @abstractmethod
-    def loss_PINN(self, net: Callable, X: torch.Tensor) -> torch.Tensor:
+    def loss_PINN(
+            self, net: Callable, X: torch.Tensor
+        ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
         """
         Computes the full PINN loss $\mathcal{L}_{\text{PINN}}(w)$, which
         combines physics-based residuals and data-driven supervision. The total
@@ -239,6 +245,8 @@ class PinnBase(ABC):
         torch.Tensor
             Scalar tensor representing the total loss $\mathcal{L}_{\text{PINN}}(w)$
             used to train the model.
+        dict[str, torch.Tensor]
+            Dictionary containing individual loss components (e.g., 'loss_pde', ...).
         """
         pass
 
