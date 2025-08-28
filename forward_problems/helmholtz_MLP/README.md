@@ -1,6 +1,6 @@
 # Nonhomogeneous Helmholtz Equation in 2D
 
-This experiment solves the 2D Nonhomogeneous Helmholtz equation on the unit square $\Omega:=[0,1]\times[0,1]$ using a Physics-Informed Neural Network. This experiment exemplifies a case where Physics-Informed Neural Networks (PINNs) can fail with a simple case spatial oscillations damped by a reaction term $−k^2\boldsymbol{u}, particularly for high wavenumbers $k$.
+This experiment solves the 2D Nonhomogeneous Helmholtz equation on the unit square $\Omega:=[0,1]\times[0,1]$ using a Physics-Informed Neural Network. This experiment exemplifies a case where Physics-Informed Neural Networks (PINNs) can fail with a simple case spatial oscillations damped by a reaction term $−k^2\boldsymbol{u}$, particularly for high wavenumbers $k$.
 
 ## Problem Description
 
