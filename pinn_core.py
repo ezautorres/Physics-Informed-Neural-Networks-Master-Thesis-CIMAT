@@ -1,5 +1,5 @@
 """
-pinn_base.py
+pinn_core.py
 ------------
 Abstract base class for Physics-Informed Neural Networks (PINNs).
 
@@ -9,7 +9,7 @@ Institution: Centro de Investigación en Matemáticas (CIMAT).
 
 Description
 -----------
-This module defines the abstract base class `PinnBase`, which provides the
+This module defines the abstract base class `PinnCore`, which provides the
 core infrastructure for training Physics-Informed Neural Networks (PINNs).
 It encapsulates:
     - Model instantiation and optimizer configuration.
@@ -24,7 +24,7 @@ PyTorch, and Python's `random` module, and it manages device configuration
 
 Classes
 -------
-PinnBase(ABC)
+PinnCore(ABC)
     Abstract base class for PINNs. Provides training, checkpointing, and
     model-loading utilities. Subclasses must implement:
         - `.analytical_solution(X)`
@@ -34,9 +34,9 @@ Usage
 -----
 Example: defining a custom PINN subclass
 >>> import torch
->>> from pinn_base import PinnBase
+>>> from pinn_core import PinnCore
 
->>> class HeatEquationPINN(PinnBase):
+>>> class HeatEquationPINN(PinnCore):
 ...     def analytical_solution(self, X: torch.Tensor) -> torch.Tensor:
 ...         # Example analytical solution
 ...         x, t = X[:, 0], X[:, 1]
@@ -99,7 +99,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from trainer import train_pinn                     # Training loop.
 from utils import load_model, save_checkpoint      # Model I/O.
 
-class PinnBase(ABC):
+class PinnCore(ABC):
     def __init__(
         self,
         epochs: int,
@@ -145,7 +145,7 @@ class PinnBase(ABC):
         checkpoint_filename : str, optional
             Base filename for saving model checkpoints. Default is "checkpoint.pth".
         """
-        # Initialize the PinnBase class.
+        # Initialize the PinnCore class.
         self.epochs = epochs
         self.patience = patience
         self.pinn = model_class(**model_kwargs)

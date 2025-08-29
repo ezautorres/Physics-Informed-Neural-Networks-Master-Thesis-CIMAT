@@ -31,7 +31,7 @@ $$
 
 Implementation
 --------------
-- Class `PoissonPinn` inheriting from `PinnBase`.
+- Class `PoissonPinn` inheriting from `PinnCore`.
 - Physics-informed loss:
   - PDE residual $L_\mathrm{pde}$ from the Poisson operator (computed via 
     automatic differentiation).
@@ -93,7 +93,7 @@ device = torch.device(                             # Select GPU if available.
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 )
-from pinn_base import PinnBase       # Base class for PINNs.
+from pinn_core import PinnCore       # Base class for PINNs.
 from plotting import (               # Plotting functions.
     plot_loss, 
     plot_solution_square, 
@@ -101,7 +101,7 @@ from plotting import (               # Plotting functions.
 )
 from utils import get_model_info     # Model info utility.
 
-class PoissonPinn(PinnBase):
+class PoissonPinn(PinnCore):
     def __init__(self, **params: dict):
         """
         Initializes the PoissonPinn instance using the configuration dictionary
@@ -110,7 +110,7 @@ class PoissonPinn(PinnBase):
         Parameters
         ----------
         **params : dict
-            Dictionary of arguments required by the PinnBase class, including
+            Dictionary of arguments required by the PinnCore class, including
             model configuration, optimizer settings, and domain sampling
             specifications.
         """

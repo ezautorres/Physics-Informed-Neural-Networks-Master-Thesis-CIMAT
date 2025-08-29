@@ -53,7 +53,7 @@ with coefficients $b$ and $c$ depending on $R$ and $\rho$.
 
 Implementation
 --------------
-- Class `InferringConductivityValue` inheriting from `PinnBase`.
+- Class `InferringConductivityValue` inheriting from `PinnCore`.
 - Custom conductivity function `lambda_fn` defined in terms of $R$ and $\rho$.
 - Physics-informed loss:
   - PDE residual $L_\mathrm{pde}$ enforcing $\nabla \cdot (\lambda \nabla u) = 0$.
@@ -113,7 +113,7 @@ device = torch.device(                             # Select GPU if available.
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 )
-from pinn_base import PinnBase       # Base class for PINNs.
+from pinn_core import PinnCore       # Base class for PINNs.
 from plotting import (               # Plotting functions.
     plot_loss, 
     plot_solution_circle, 
@@ -121,7 +121,7 @@ from plotting import (               # Plotting functions.
 )
 from utils import get_model_info     # Model info utility.
 
-class InferringConductivityValue(PinnBase):
+class InferringConductivityValue(PinnCore):
     def __init__(self, **params):
         """
         Initializes the InferringConductivityValue instance using the
@@ -130,7 +130,7 @@ class InferringConductivityValue(PinnBase):
         Parameters
         ----------
         **params : dict
-            Dictionary of arguments required by the PinnBase class, including
+            Dictionary of arguments required by the PinnCore class, including
             model configuration, optimizer settings, and domain sampling
             specifications.
         """

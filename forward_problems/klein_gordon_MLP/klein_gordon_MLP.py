@@ -41,7 +41,7 @@ $$
 
 Implementation
 --------------
-- Class `KleinGordonPinn` inheriting from `PinnBase`.
+- Class `KleinGordonPinn` inheriting from `PinnCore`.
 - Overrides:
   - `analytical_solution` returning the closed-form solution.
   - `loss_PINN` computing PDE, boundary, and initial condition residuals.
@@ -77,8 +77,12 @@ Example instantiation:
 
 To load and visualize:
 >>> kg_pinn.load_model(load_best=True)
->>> plot_solution_square(kg_pinn, domain_kwargs, "solution.png", time_dependent=True)
->>> plot_comparison_contour_square(kg_pinn, domain_kwargs, "comparison.png", time_dependent=True)
+>>> plot_solution_square(
+...     kg_pinn, domain_kwargs, "solution.png", time_dependent=True
+... )
+>>> plot_comparison_contour_square(
+...     kg_pinn, domain_kwargs, "comparison.png", time_dependent=True
+... )
 
 Notes
 -----
@@ -106,7 +110,7 @@ device = torch.device(                             # Select GPU if available.
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 )
-from pinn_base import PinnBase       # Base class for PINNs.
+from pinn_core import PinnCore       # Base class for PINNs.
 from plotting import (               # Plotting functions.
     plot_loss, 
     plot_solution_square, 
@@ -114,7 +118,7 @@ from plotting import (               # Plotting functions.
 )
 from utils import get_model_info     # Model info utility.
 
-class KleinGordonPinn(PinnBase):
+class KleinGordonPinn(PinnCore):
     def __init__(self, **params):
         """
         Initializes the KleinGordonPinn instance using the configuration
@@ -123,7 +127,7 @@ class KleinGordonPinn(PinnBase):
         Parameters
         ----------
         **params : dict
-            Dictionary of arguments required by the PinnBase class, including
+            Dictionary of arguments required by the PinnCore class, including
             model configuration, optimizer settings, and domain sampling
             specifications.
         """

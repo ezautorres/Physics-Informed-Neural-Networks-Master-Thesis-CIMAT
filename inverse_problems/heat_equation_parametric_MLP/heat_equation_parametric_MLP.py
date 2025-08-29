@@ -38,7 +38,7 @@ $$
 
 Implementation
 --------------
-- Class `HeatEquationPinn` inheriting from `PinnBase`.
+- Class `HeatEquationPinn` inheriting from `PinnCore`.
 - Overrides:
   - `analytical_solution` returning the closed-form solution.
   - `loss_PINN` computing PDE, boundary, and initial condition residuals.
@@ -117,14 +117,14 @@ device = torch.device(                             # Select GPU if available.
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 )
-from pinn_base import PinnBase       # Base class for PINNs.
+from pinn_core import PinnCore       # Base class for PINNs.
 from plotting import (               # Plotting functions.
     plot_loss, 
     plot_solution_square, 
     plot_comparison_contour_square
 )
 from utils import get_model_info     # Model info utility.
-class HeatEquationPinn(PinnBase):
+class HeatEquationPinn(PinnCore):
     def __init__(self, **params):
         """
         Initializes the HeatEquationPinn instance using the configuration
@@ -133,7 +133,7 @@ class HeatEquationPinn(PinnBase):
         Parameters
         ----------
         **params : dict
-            Dictionary of arguments required by the PinnBase class, including
+            Dictionary of arguments required by the PinnCore class, including
             model configuration, optimizer settings, and domain sampling
             specifications.
         """
