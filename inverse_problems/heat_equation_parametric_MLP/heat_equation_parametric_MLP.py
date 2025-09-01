@@ -124,10 +124,10 @@ from plotting import (               # Plotting functions.
     plot_comparison_contour_square
 )
 from utils import get_model_info     # Model info utility.
-class HeatEquationPinn(PinnCore):
+class HeatParametricPinn(PinnCore):
     def __init__(self, **params):
         """
-        Initializes the HeatEquationPinn instance using the configuration
+        Initializes the HeatParametricPinn instance using the configuration
         dictionary passed to the base class.
 
         Parameters
@@ -138,7 +138,7 @@ class HeatEquationPinn(PinnCore):
             specifications.
         """
         # Initialize the PINN with parameters from the base class.
-        super(HeatEquationPinn, self).__init__(**params)
+        super(HeatParametricPinn, self).__init__(**params)
         self.L = self.domain_kwargs["dim1_max"]  # Length of the domain in x.
 
     def analytical_solution(self, X: torch.Tensor) -> torch.Tensor:
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     }
 
     checkpoint_filename = "heat_parametric_MLP.pth"
-    heat_pinn = HeatEquationPinn(
+    heat_pinn = HeatParametricPinn(
         model_class=MLP,  # Model class.
         model_kwargs=model_kwargs,
         domain_kwargs=domain_kwargs,  # Domain parameters.

@@ -26,7 +26,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,t) = \sin(\pi x)\cdot\cos(\pi c t) + \sin(2\pi x)\cdot\cos(2\pi c t).
+\boldsymbol{u}(x,t) = \sin(\pi x)\cos(\pi c t) + \sin(2\pi x)\cos(2\pi c t).
 $$
         
 ## Model Summary for $c=10$

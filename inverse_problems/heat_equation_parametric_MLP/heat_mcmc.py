@@ -96,7 +96,7 @@ from utils import load_full_model, get_model_info
 from sampling import generate_synthetic_data_on_square
 from inference.mcmc import MCMCInference, define_forward_map
 from plotting import plot_joint_posteriors
-from inverse_problems.heat_equation_parametric_MLP.heat_equation_parametric_MLP import HeatEquationPinn
+from inverse_problems.heat_equation_parametric_MLP.heat_equation_parametric_MLP import HeatParametricPinn
 
 # ----------------------------------------------------------------------------------
 # Load the trained PINN model for parameter inference.
@@ -104,7 +104,7 @@ from inverse_problems.heat_equation_parametric_MLP.heat_equation_parametric_MLP 
 checkpoint_filename = "heat_parametric_MLP.pth"
 heat_pinn = load_full_model(
     checkpoint_path=os.path.join("trained_models", checkpoint_filename),
-    model_class=HeatEquationPinn
+    model_class=HeatParametricPinn
 )
 get_model_info(checkpoint_filename) # Print model information.
 

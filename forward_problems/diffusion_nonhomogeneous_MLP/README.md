@@ -7,7 +7,7 @@ This experiment solves the 1D time-dependent diffusion equation on the space–t
 The following PDE is solved:
 
 $$
-\frac{\partial \boldsymbol{u}}{\partial t} - \frac{\partial \boldsymbol{u}^2}{\partial x^2} = -e^{-t}\sin(\pi x) (1-\pi^{2}), \qquad x\in\Omega, \quad t\in(0,1],
+\frac{\partial \boldsymbol{u}}{\partial t} - \frac{\partial \boldsymbol{u}^2}{\partial x^2} = (\pi^{2}-1)e^{-t}\sin(\pi x), \qquad x\in\Omega, \quad t\in(0,1],
 $$
 
 with homogeneous Dirichlet boundary conditions:
@@ -25,7 +25,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,t) = e^{-t}\sin(\pi x).
+\boldsymbol{u}(x,t) = \sin(\pi x)e^{-t}.
 $$
         
 ## Model Summary

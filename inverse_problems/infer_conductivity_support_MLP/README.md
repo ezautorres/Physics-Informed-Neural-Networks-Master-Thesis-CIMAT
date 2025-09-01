@@ -1,37 +1,37 @@
 # Conductivity Equation in the Unit Disk
 
-This experiment developes a Physics-Informed Neural Network (PINN) to approximate the solution of a conductivity problem in the unit disk $B$ where the conductivity depends on two parameters: fixed $\rho$ (**conductivity value**) and a variable $R$ (**conductivity support**). The problem is subject to a Neumann boundary condition and an additional condition given by a Fourier restriction. The study illustrates how a PINN can be extended to a parametric formulation, enabling the model to learn solutions across a range of admissible values of the conductivity support parameter $R$, which is then evaluated for selected test cases.
+This experiment developes a Physics-Informed Neural Network (PINN) to approximate the solution of a conductivity problem in the unit disk $\Omega= \{ \mathbf{x}\in \mathbb{R}^2 : \|\mathbf{x}\| < 1\}$ where the conductivity depends on two parameters: fixed $\rho$ (**conductivity value**) and a variable $R$ (**conductivity support**). The problem is subject to a Neumann boundary condition and an additional condition given by a Fourier restriction. The study illustrates how a PINN can be extended to a parametric formulation, enabling the model to learn solutions across a range of admissible values of the conductivity support parameter $R$, which is then evaluated for selected test cases.
 
 ## Problem Description
 
 The following PDE is solved:
 
 $$
-  \nabla \cdot \left( \lambda(\mathbf{x}) \nabla \boldsymbol{u} (\mathbf{x}) \right) = 0, \qquad \mathbf{x}\in B,
+  \nabla \cdot \left( \lambda(\mathbf{x};\theta) \nabla \boldsymbol{u} (\mathbf{x};\theta) \right) = 0, \qquad \mathbf{x}=(x,y)\in \Omega,
 $$
 
 subject to the Neumann boundary condition:
 
 $$
-  \lambda \frac{\partial \boldsymbol{u}}{\partial n} (\mathbf{x}) = f(\mathbf{x}), \qquad \mathbf{x}\in \partial B.
+  \lambda(\mathbf{x};\theta) \frac{\partial \boldsymbol{u}}{\partial \mathbf{n}} (\mathbf{x};\theta) = g(\mathbf{x}), \qquad \mathbf{x}\in \partial \Omega.
 $$
 
-where $n$ denotes the outward unit normal vector to $\partial B$. The conductivity is piecewise defined as:
+where $\mathbf{n}$ denotes the outward unit normal vector to $\partial \Omega$. The conductivity is piecewise defined as:
 
 $$
-\lambda(\mathbf{x}) =
+\lambda(\mathbf{x};\theta) =
 \begin{cases}
-    1 + \rho, & |\mathbf{x}| < R, \\\\
-    1, & R < |\mathbf{x}| < 1.
+    1 + \rho, & \|\mathbf{x}\| < R, \\\\
+    1, & R < \|\mathbf{x}\| < 1.
 \end{cases}
 $$
 
-The analytical solution in for $f = \cos(\theta)$ in polar coodinates is:
+The analytical solution in for $g = \cos(\varphi)$ in polar coodinates is:
 
 $$
-\boldsymbol{u}(r,\theta) = \begin{cases}
-		2 (b + c) \left( \dfrac{r}{R} \right)^4 \cos(4\theta), & r < R, \\
-		2 \left[ b \left( \dfrac{r}{R} \right)^4 + c \left( \dfrac{r}{R} \right)^{-4} \right] \cos(4\theta), & r > R,
+\boldsymbol{u}(r,\varphi) = \begin{cases}
+		2 (b + c) \left( \dfrac{r}{R} \right)^4 \cos(4\varphi), & r < R, \\
+		2 \left[ b \left( \dfrac{r}{R} \right)^4 + c \left( \dfrac{r}{R} \right)^{-4} \right] \cos(4\varphi), & r > R,
 	\end{cases}
 $$
 
@@ -41,10 +41,10 @@ $$
 b = \frac{(\rho+2)R^4}{8(\rho R^8 + \rho + 2)}, \quad c = \frac{\rho R^4}{8(\rho R^8 + \rho + 2)}.
 $$
 
-The additional condition is $\int_{\partial B} \boldsymbol{u} ds = 0$ that means:
+The additional condition is $\int_{\partial \Omega} \boldsymbol{u} ds = 0$ that means:
 
 $$
-  \left( \frac{1}{N_{b}} \sum_{i=1}^{N_{b}} \boldsymbol{u}(\mathbf{x}_i) \right)^{2}.
+  \left( \frac{1}{N_{b}} \sum_{i=1}^{N_{b}} \boldsymbol{u}(\mathbf{x}_i;\theta) \right)^{2}.
 $$
 
 ## Model Summary for $R\in[0,1.0],\ \rho=6$

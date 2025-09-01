@@ -19,7 +19,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,y) = \sin(\pi x) \cdot \sin(\pi y).
+\boldsymbol{u}(x,y) = \sin(\pi x) \sin(\pi y).
 $$
         
 ## Model Summary

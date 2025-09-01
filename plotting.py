@@ -999,7 +999,7 @@ def plot_corner_comparison(
                 ax.set_ylabel("density", fontsize=12)
                 ax.set_xlabel(par_names[j], fontsize=12)
 
-            # Off-diagonal: joint scatter
+            # Off-diagonal: joint scatter.
             else: 
 
                 ax.scatter(
@@ -1025,6 +1025,26 @@ def plot_corner_comparison(
                     ax.set_ylabel(par_names[i], fontsize=12)
             
             ax.grid(True, alpha=0.4)
+
+    # Deleting x-tick labels for all but the last row.
+    for i in range(n_params):
+        for j in range(n_params):
+            ax = axes[i, j]
+            if i < n_params - 1:   # all rows except the last.
+                ax.set_xticklabels([])
+
+    # Reduce number of ticks and adjust size.
+    for ax in axes.flat:
+        ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=4))
+        ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=4))
+        ax.tick_params(labelsize=9, pad=2)
+
+    # Rotate only the x-ticks of the last row.
+    for j in range(n_params):
+        axes[-1, j].tick_params(axis='x', labelrotation=15)
+
+    # Adjust space between subplots.
+    fig.subplots_adjust(wspace=0.08, hspace=0.08)
 
     # Labels and styling.
     handles = [

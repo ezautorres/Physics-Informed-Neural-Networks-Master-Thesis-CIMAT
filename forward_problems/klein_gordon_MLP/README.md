@@ -8,13 +8,13 @@ $\Omega\times[0,3]$ with $\Omega:=[-1,1]$ using a Physics-Informed Neural Networ
 The following PDE is solved:
 
 $$
-\frac{\partial \boldsymbol{u}^2}{\partial t^2} + \alpha \frac{\partial \boldsymbol{u}^2}{\partial x^2} + \beta \boldsymbol{u} + \gamma \boldsymbol{u}^{k} = -x\cdot\cos{t} + x^{2}\cdot\cos^{2}{t}, \qquad x\in\Omega, \quad t\in(0,3],
+\frac{\partial \boldsymbol{u}^2}{\partial t^2} + \alpha \frac{\partial \boldsymbol{u}^2}{\partial x^2} + \beta \boldsymbol{u} + \gamma \boldsymbol{u}^{k} = -x\cos{t} + x^{2}\cos^{2}{t}, \qquad x\in\Omega, \quad t\in(0,3],
 $$
 
 with parameters $\alpha=-1$, $\beta=0$, $\gamma=1$, $k=2$, and homogeneous Dirichlet boundary conditions:
 
 $$
-    \boldsymbol{u}(-1,t) = -\cos(t), \quad \boldsymbol{u}(1,t) = \cos(t), \qquad t\in[0,3].
+    \boldsymbol{u}(-1,t) = -\cos{t}, \quad \boldsymbol{u}(1,t) = \cos{t}, \qquad t\in[0,3].
 $$
 
 Initial condition:
@@ -26,7 +26,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,t) = x\cdot\cos(t).
+\boldsymbol{u}(x,t) = x\cos{t}.
 $$
         
 ## Model Summary

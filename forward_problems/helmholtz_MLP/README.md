@@ -19,7 +19,7 @@ $$
 When $k=n\pi$ with $n\in\mathbb{Z}^{+}$, the analytical solution is:
 
 $$
-\boldsymbol{u}(x,y) = \sin(k x) \cdot \sin(k y).
+\boldsymbol{u}(x,y) = \sin(k x) \sin(k y).
 $$
         
 ## Model Summary for $k=3\pi$
