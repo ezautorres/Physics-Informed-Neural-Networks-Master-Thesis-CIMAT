@@ -7,7 +7,7 @@ This experiment solves the 2D Poisson equation on the unit square $\Omega:=[0,1]
 The following PDE is solved:
 
 $$
-\Delta \boldsymbol{u}(x,y) = -2\pi^2 \sin(\pi x)\sin(\pi y), \qquad (x,y)\in\Omega,
+\Delta \boldsymbol{u}(x,y) = -2\pi^2 \cdot \sin(\pi x)\cdot\sin(\pi y), \qquad (x,y)\in\Omega,
 $$
 
 with homogeneous Dirichlet boundary conditions:
@@ -19,7 +19,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,y) = \sin(\pi x) \sin(\pi y).
+\boldsymbol{u}(x,y) = \sin(\pi x)\cdot \sin(\pi y).
 $$
         
 ## Model Summary

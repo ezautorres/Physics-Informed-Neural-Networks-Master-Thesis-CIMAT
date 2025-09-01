@@ -7,7 +7,7 @@ This experiment solves the 2D Nonhomogeneous Helmholtz equation on the unit squa
 The following PDE is solved:
 
 $$
--\Delta \boldsymbol{u}(x,y) - k^2 \boldsymbol{u} (x,y) = k^2 \sin(k x)\sin(k y), \qquad (x,y)\in\Omega,
+-\Delta \boldsymbol{u}(x,y) - k^2 \boldsymbol{u} (x,y) = k^2\cdot \sin(k x)\cdot\sin(k y), \qquad (x,y)\in\Omega,
 $$
 
 with homogeneous Dirichlet boundary conditions:
@@ -19,7 +19,7 @@ $$
 When $k=n\pi$ with $n\in\mathbb{Z}^{+}$, the analytical solution is:
 
 $$
-\boldsymbol{u}(x,y) = \sin(k x) \sin(k y).
+\boldsymbol{u}(x,y) = \sin(k x)\cdot \sin(k y).
 $$
         
 ## Model Summary for $k=3\pi$

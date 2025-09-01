@@ -26,7 +26,7 @@ $$
 The analytical solution is:
 
 $$
-\boldsymbol{u}(x,t) = x\cos{t}.
+\boldsymbol{u}(x,t) = x\cdot \cos{t}.
 $$
         
 ## Model Summary
