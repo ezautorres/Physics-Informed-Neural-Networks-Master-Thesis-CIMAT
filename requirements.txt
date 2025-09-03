@@ -1,0 +1,8 @@
+numpy==1.26.4
+scipy==1.13.1
+matplotlib==3.9.2
+pandas==2.2.2
+tqdm==4.66.5
+colorama==0.4.6
+torch>=2.2
+pytwalk==1.9.0
