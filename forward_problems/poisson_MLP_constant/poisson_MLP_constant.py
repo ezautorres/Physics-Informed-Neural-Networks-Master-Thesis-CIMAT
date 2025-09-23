@@ -1,7 +1,7 @@
 """
-laplace_pinn.py
----------------
-Physics-Informed Neural Network (PINN) for the two-dimensional Laplace equation.
+poisson_MLP_constant_source.py
+------------------------------
+Physics-Informed Neural Network (PINN) for the two-dimensional Poisson equation.
 
 Author: Ezau Faridh Torres Torres.
 Date: 25 August 2025.
@@ -9,30 +9,33 @@ Institution: Centro de Investigación en Matemáticas (CIMAT).
 
 Description
 -----------
-Solves the Laplace equation on the unit square domain $[0,1]\times[0,1]$ 
+Solves the Poisson equation on the unit square domain $[0,1]\times[0,2]$ 
 using a Physics-Informed Neural Network (PINN) with homogeneous Dirichlet 
 boundary conditions.
 
 Governing PDE:
 $$
-    \Delta u(x,y) = 0, \quad (x,y)\in(0,1)\times(0,1).
+    \Delta u(x,y) = 4, \quad (x,y)\in(0,1)\times(0,2).
 $$
 
 Boundary conditions:
 $$
-    u(x,0) = u(x,1) = u(0,y) = 0, u(1,y) = \sinh(\pi)\sin(\pi y).
+    u(0,y) = y^2,
+    u(1,y) = 1+y^2,
+    u(x,0) = x^2,
+    u(x,2) = x^2 + 4.
 $$
 
 Analytical solution:
 $$
-    u(x,y) = \sinh(\pi x) \sin(\pi y).
+    u(x,y) = x^2 + y^2.
 $$
 
 Implementation
 --------------
-- Class `LaplacePinn` inheriting from `PinnCore`.
+- Class `PoissonCSPinn` inheriting from `PinnCore`.
 - Physics-informed loss:
-  - PDE residual $L_\mathrm{pde}$ from the Laplace operator (computed via 
+  - PDE residual $L_\mathrm{pde}$ from the Poisson operator (computed via 
     automatic differentiation).
   - Boundary residual $L_\mathrm{bc}$ enforcing Dirichlet constraints.
 - Training with L-BFGS optimizer and strong Wolfe line search.
@@ -44,10 +47,10 @@ Implementation
 Usage
 -----
 To train the model:
-    $ python laplace_MLP.py
+    $ python poisson_MLP_constant_source.py
 
 Example (inside the script):
->>> laplace_pinn = LaplacePinn(
+>>> poissonCS_pinn = PoissonCSPinn(
 ...     model_class=MLP,
 ...     model_kwargs=model_kwargs,
 ...     domain_kwargs=domain_kwargs,
@@ -56,14 +59,14 @@ Example (inside the script):
 ...     epochs=150,
 ...     patience=10,
 ...     sampling_fn=sample_square_uniform,
-...     checkpoint_filename="laplace_MLP.pth"
+...     checkpoint_filename="poissonCS_MLP.pth"
 ... )
->>> laplace_pinn.train()
+>>> poissonCS_pinn.train()
 
 To load and visualize:
->>> laplace_pinn.load_model(load_best=True)
->>> plot_solution_square(laplace_pinn, domain_kwargs, "solution.png")
->>> plot_comparison_contour_square(laplace_pinn, domain_kwargs, "comparison.pdf", eps=1e-1)
+>>> poissonCS_pinn.load_model(load_best=True)
+>>> plot_solution_square(poissonCS_pinn, domain_kwargs, "solution.png")
+>>> plot_comparison_contour_square(poissonCS_pinn, domain_kwargs, "comparison.pdf")
 
 Notes
 -----
@@ -100,10 +103,10 @@ from plotting import (               # Plotting functions.
 )
 from utils import get_model_info     # Model info utility.
 
-class LaplacePinn(PinnCore):
+class PoissonCSPinn(PinnCore):
     def __init__(self, **params: dict):
         """
-        Initializes the LaplacePinn instance using the configuration dictionary
+        Initializes the PoissonCSPinn instance using the configuration dictionary
         passed to the base class.
         
         Parameters
@@ -114,11 +117,11 @@ class LaplacePinn(PinnCore):
             specifications.
         """
         # Initialize the PINN with parameters from the base class.
-        super(LaplacePinn, self).__init__(**params)
+        super(PoissonCSPinn, self).__init__(**params)
 
     def analytical_solution(self, X: torch.Tensor) -> torch.Tensor:
         """
-        Returns the analytical solution $u(x,y) = \sinh(\pi x) \sin(\pi y)$
+        Returns the analytical solution $u(x,y) = x^2 + y^2$
         evaluated at input points X.
 
         Parameters
@@ -133,8 +136,8 @@ class LaplacePinn(PinnCore):
             Tensor of shape (N,) containing the analytical solution evaluated at
             each input point.
         """
-        return torch.sinh(torch.pi * X[:, 0]) * torch.sin(torch.pi * X[:, 1])
-
+        return X[:, 0]**2 + X[:, 1]**2
+    
     def loss_PINN(
             self, net: Callable, X: torch.Tensor
         ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
@@ -188,17 +191,13 @@ class LaplacePinn(PinnCore):
         loss_pde = torch.tensor(0.0, device=X.device)
         loss_bc = torch.tensor(0.0, device=X.device)
 
-        # Some constants.
-        PI = torch.tensor(torch.pi, device=X.device, dtype=X.dtype)
-        SINH_PI = torch.sinh(PI)
-
         for i in range(len(X)):
             xy = X[i, :].unsqueeze(0).requires_grad_(True)  # Input point (x, y).
             region = int(indicators[i].item())  # Region indicator.
             u = net(xy)  # Output of the net for the current input point.
 
             # ----------------------------------------------------------------------
-            # PDE loss: N[u] = f => 𝚫u = 0.
+            # PDE loss: N[u] = f => 𝚫u = 4.
             # ----------------------------------------------------------------------
             if region == 1:
 
@@ -213,33 +212,36 @@ class LaplacePinn(PinnCore):
                 u_yy = torch.autograd.grad(u_y, xy, create_graph=True)[0][:, 1]
                 
                 # PDE residual loss.
-                loss_pde += (u_xx + u_yy).pow(2).squeeze()
+                loss_pde += (u_xx + u_yy - 4).pow(2).squeeze()
 
             # ----------------------------------------------------------------------
-            # Boundary loss: u(x,0) = u(x,1) = u(0,y) = 0, u(1,y) = sinh(π)*sin(πy).
+            # Boundary loss: B[u] = g.
             # ----------------------------------------------------------------------
-            elif region == 3:
-                # Condition at x = x_max = 1: u = sinh(π)*sin(π*y).
-                loss_bc += (
-                    u - SINH_PI * torch.sin(PI * xy[0, 1])
-                ).pow(2).squeeze()
+            elif region == 2: # u(0,y) = y^2.
+                loss_bc += (u - (xy[0, 1]**2)).pow(2).squeeze()
 
-            elif region in [2, 4, 5]:
-                loss_bc += u.pow(2).squeeze()
-        
+            elif region == 3: # u(1,y) = 1 + y^2.
+                loss_bc += (u - (1 + xy[0, 1]**2)).pow(2).squeeze()
+
+            elif region == 4: # u(x,0) = x^2.
+                loss_bc += (u - (xy[0, 0]**2)).pow(2).squeeze()
+
+            elif region == 5: # u(x,2) = x^2 + 4.
+                loss_bc += (u - (xy[0, 0]**2 + 4)).pow(2).squeeze()
+
         # Normalize each term.
         loss_pde /= N_pde
         loss_bc /= (N_bc_xmin + N_bc_xmax + N_bc_ymin + N_bc_ymax)
-        
+
         # --------------------------------------------------------------------------
         # PINN loss: λ_pde * L_pde + λ_bc * L_bc.
         # --------------------------------------------------------------------------
         loss_PINN = lb_pde * loss_pde + lb_bc * loss_bc
-        
+
         return loss_PINN, {
             "loss_pde": loss_pde,
             "loss_bc": loss_bc
-        }
+            }
 
 # ==================================================================================
 # Main function.
@@ -257,14 +259,14 @@ if __name__ == "__main__":
         'dim1_min': 0.,
         'dim1_max': 1.,
         'dim2_min': 0.,
-        'dim2_max': 1.,
+        'dim2_max': 2.,
         # Collocation points.
-        'interiorSize': 100,
-        'dim1_minSize': 1500,
-        'dim1_maxSize': 100,
-        'dim2_minSize': 1500,
-        'dim2_maxSize': 1500,
-        'valSize': 1100,
+        'interiorSize': 200,
+        'dim1_minSize': 250,
+        'dim1_maxSize': 250,
+        'dim2_minSize': 250,
+        'dim2_maxSize': 250,
+        'valSize': 300,
         # Parameters for the PINN.
         'fixed_params': None,
         'param_domains': None,
@@ -278,10 +280,10 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------------------
     model_kwargs = {
         'inputSize': 2,  # Because we do not have parameters.
-        'hidden_lys': [100, 50], 
+        'hidden_lys': [100, 50, 50], 
         'outputSize': 1,            
         'activation': 'tanh',         
-        'dropout': 0.0,          
+        'dropout': 0.0,            
         'normalization': True,  # Whether to apply layer normalization.
     }
     
@@ -295,15 +297,15 @@ if __name__ == "__main__":
         'line_search_fn': "strong_wolfe"  # Line search function.
     }
 
-    checkpoint_filename = 'laplace_MLP.pth'
-    laplace_pinn = LaplacePinn(
+    checkpoint_filename = 'poissonCS_MLP.pth'
+    poissonCS_pinn = PoissonCSPinn(
         model_class=MLP,  # Model class for the PINN.
         model_kwargs=model_kwargs,                
         domain_kwargs=domain_kwargs,  # Domain parameters.
         optimizer_class=optimizer_class,
         optimizer_kwargs=optimizer_kwargs,
-        epochs=1500,
-        patience=100,
+        epochs=500,
+        patience=50,
         sampling_fn=sample_square_uniform,  # Sampling function.
         checkpoint_filename=checkpoint_filename,  # Filename for the checkpoints.
     )
@@ -312,28 +314,28 @@ if __name__ == "__main__":
     # Train and plot.
     # ------------------------------------------------------------------------------
     # Train the model.
-    laplace_pinn.train()  # Uncomment to train the model.
+    #poissonCS_pinn.train()  # Uncomment to train the model.
 
     # Load the complete model and print information.
-    laplace_pinn.load_model(load_best=False) 
+    poissonCS_pinn.load_model(load_best=False) 
     get_model_info(checkpoint_filename)
     
     # Plot the loss and the solution.
     plot_loss(
-        model_instance=laplace_pinn, filename="loss_plot.png"
+        model_instance=poissonCS_pinn, filename="loss_plot.png"
     )
 
     # Plot the solution with the best model.
-    laplace_pinn.load_model(load_best=True)  # Load the best model.
+    poissonCS_pinn.load_model(load_best=True)  # Load the best model.
     plot_solution_square(
-        model_instance=laplace_pinn,
+        model_instance=poissonCS_pinn,
         domain_kwargs=domain_kwargs,
         filename="solution_plot.png"
     )
 
     # Plot the comparison of the PINN solution with the analytical solution.
     plot_comparison_contour_square(
-        model_instance=laplace_pinn,
+        model_instance=poissonCS_pinn,
         domain_kwargs=domain_kwargs,
         filename="comparison_plot.png",
     )

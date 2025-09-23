@@ -149,9 +149,9 @@ class WavePinn(PinnCore):
             Tensor of shape (N,) containing the analytical solution evaluated
             at each input point.
         """
-        x = X[:,0]
-        t = X[:,1]
-        c = X[:,2]
+        x = X[:, 0]
+        t = X[:, 1]
+        c = X[:, 2]
         return (
             torch.sin(np.pi * x)
             * torch.cos(c * np.pi * t)

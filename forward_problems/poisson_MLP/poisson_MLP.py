@@ -64,7 +64,9 @@ Example (inside the script):
 To load and visualize:
 >>> poisson_pinn.load_model(load_best=True)
 >>> plot_solution_square(poisson_pinn, domain_kwargs, "solution.png")
->>> plot_comparison_contour_square(poisson_pinn, domain_kwargs, "comparison.pdf", eps=1e-1)
+>>> plot_comparison_contour_square(
+...    poisson_pinn, domain_kwargs, "comparison.pdf"
+... )
 
 Notes
 -----
@@ -191,12 +193,12 @@ class PoissonPinn(PinnCore):
         # ∂²u/∂x².
         u_xx = torch.autograd.grad(
             u_x, X_pde, grad_outputs=torch.ones_like(u_x), create_graph=True
-        )[0][:,0]
+        )[0][:, 0]
 
         # ∂²u/∂y².
         u_yy = torch.autograd.grad(
             u_y, X_pde, grad_outputs=torch.ones_like(u_y), create_graph=True
-        )[0][:,1]
+        )[0][:, 1]
 
         # Source term: -2π²sin(πx)sin(πy).
         f = (
