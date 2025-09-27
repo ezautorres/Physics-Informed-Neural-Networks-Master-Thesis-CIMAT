@@ -13,10 +13,10 @@ $$
 with boundary conditions:
 
 $$
-\boldsymbol{u}(0,y) = y^2 \\
-\boldsymbol{u}(1,y) = 1 + y^2 \\
-\boldsymbol{u}(x,0) = x^2 \\
-\boldsymbol{u}(x,2) = 4 + x^2
+\boldsymbol{u}(0,y) = y^2, \quad
+\boldsymbol{u}(1,y) = 1 + y^2, \quad
+\boldsymbol{u}(x,0) = x^2, \quad
+\boldsymbol{u}(x,2) = 4 + x^2.
 $$
 
 The analytical solution is:

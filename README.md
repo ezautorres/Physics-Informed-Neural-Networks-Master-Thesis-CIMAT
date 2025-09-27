@@ -49,6 +49,7 @@ PinnCore/
 │   ├── klein_gordon_MLP/
 │   ├── laplace_MLP/
 │   ├── poisson_MLP/
+│   ├── poisson_MLP_constant/
 │   └── wave_highfreq_MLP/
 │
 ├── inverse_problems/             # Parametric and inverse setups
@@ -77,6 +78,7 @@ PinnCore/
 - **Klein–Gordon Equation** ([`klein_gordon_MLP/`](forward_problems/klein_gordon_MLP/))
 - **Laplace Equation** ([`laplace_MLP/`](forward_problems/laplace_MLP/))
 - **Poisson Equation** ([`poisson_MLP/`](forward_problems/poisson_MLP/))
+- **Poisson Equation with Constant Source Term** ([`poisson_MLP_constant/`](forward_problems/poisson_MLP_constant/))
 - **Wave Equation (High Frequency)** ([`wave_highfreq_MLP/`](forward_problems/wave_highfreq_MLP/))
 
 ## Inverse Problems
