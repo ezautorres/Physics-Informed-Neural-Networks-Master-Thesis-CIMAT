@@ -54,7 +54,7 @@ import matplotlib.pyplot as plt        # Plotting.
 import matplotlib as mpl               # Plotting.
 import math                            # Math functions.
 from typing import Callable, Sequence  # Type hints.
-
+    
 def plot_loss(
     model_instance: Callable,
     filename: str | None = None,
